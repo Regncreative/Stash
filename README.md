@@ -45,3 +45,23 @@ The app starts silently in the system tray. Click the tray icon (or press `Ctrl+
 ## License
 
 MIT
+
+## Releases & auto-update
+
+Packaged builds check [GitHub Releases](https://github.com/Regncreative/Stash/releases) for updates on launch and via tray / settings.
+
+### Publish a new version
+
+1. Bump `version` in `package.json` (e.g. `1.0.0` → `1.0.1`)
+2. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope
+3. In PowerShell:
+
+```powershell
+$env:GH_TOKEN = "ghp_..."
+$env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
+# Prefer Temp output if Defender locks C:\Stash\release
+# or add C:\Stash as a Defender exclusion, then:
+npm run release
+```
+
+This builds the installer and uploads it to a GitHub Release. Other PCs with Stash installed will download it automatically.

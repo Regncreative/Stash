@@ -61,7 +61,18 @@ export const tr = {
   createShelf: 'Raf oluştur',
   shelfName: 'İsim',
   renameShelf: 'Rafı yeniden adlandır',
-  footer: 'Stash v1.0 · Yalnızca referans · Dosyalar kopyalanmaz',
+  footer: 'Stash · Windows file shelf',
+
+  // Updates
+  updateChecking: 'Güncellemeler kontrol ediliyor…',
+  updateAvailable: (v: string) => `${v} indiriliyor…`,
+  updateDownloading: (n: number) => `Güncelleme indiriliyor… %${n}`,
+  updateReady: (v: string) => `${v} hazır — yeniden başlatınca kurulur`,
+  updateLatest: 'Güncelsiniz',
+  updateDev: 'Güncelleme yalnızca kurulu sürümde çalışır',
+  updateError: 'Güncelleme kontrolü başarısız',
+  checkUpdates: 'Güncellemeleri denetle',
+  installAndRestart: 'Kur ve yeniden başlat',
 
   // Toasts / drop
   filesAdded: (n: number, shelf: string) =>

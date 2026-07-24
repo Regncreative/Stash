@@ -1,17 +1,22 @@
 {
   "name": "stash",
   "version": "1.0.0",
-  "description": "Temporary file shelf for Windows — collect file references without copying",
+  "description": "A modern file shelf for Windows — collect, organize and drag files from the system tray",
   "main": "./out/main/index.js",
   "author": "Stash",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Regncreative/Stash.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "dist": "npm run build && electron-builder",
     "dist:dir": "npm run build && electron-builder --dir",
+    "release": "npm run build && electron-builder --publish always",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint -c eslint.config.cjs .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
@@ -21,6 +26,7 @@
     "better-sqlite3": "^11.8.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "electron-updater": "^6.8.9",
     "framer-motion": "^11.18.2",
     "koffi": "^3.1.2",
     "lucide-react": "^0.474.0",
@@ -61,6 +67,13 @@
       "resources/**/*"
     ],
     "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Regncreative",
+        "repo": "Stash"
+      }
+    ],
     "win": {
       "target": [
         "nsis"

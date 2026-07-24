@@ -10,6 +10,7 @@ import { initDatabase, closeDatabase, getSettings } from './database'
 import { registerIpcHandlers } from './ipc'
 import { syncAutoLaunch } from './auto-launch'
 import { reregisterHotkey, unregisterHotkeys } from './hotkey'
+import { initUpdater } from './updater'
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
@@ -37,6 +38,7 @@ app.whenReady().then(() => {
   reregisterHotkey(settings.openHotkey)
 
   // Silent launch — panel stays hidden until tray click / hotkey
+  initUpdater()
 })
 
 app.on('window-all-closed', () => {

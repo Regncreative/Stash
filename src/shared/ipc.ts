@@ -41,7 +41,13 @@ export const IpcChannels = {
   THEME_GET: 'theme:get',
   THEME_CHANGED: 'theme:changed',
   NOTIFY: 'notify',
-  GET_PATH_FOR_FILE: 'get-path-for-file'
+  GET_PATH_FOR_FILE: 'get-path-for-file',
+
+  // Updates
+  UPDATE_CHECK: 'update:check',
+  UPDATE_INSTALL: 'update:install',
+  UPDATE_STATUS: 'update:status',
+  UPDATE_GET_STATUS: 'update:get-status'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]

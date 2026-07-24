@@ -37,10 +37,34 @@ export default function App() {
       }
     })
     const unsubNav = window.stash.onNavigateSettings(() => setShowSettings(true))
+    const unsubUpdate = window.stash.onUpdateStatus((status) => {
+      switch (status.state) {
+        case 'available':
+          showToast(tr.updateAvailable(status.version))
+          break
+        case 'downloading':
+          if (status.percent === 0 || status.percent % 25 === 0 || status.percent >= 99) {
+            showToast(tr.updateDownloading(status.percent))
+          }
+          break
+        case 'downloaded':
+          showToast(tr.updateReady(status.version))
+          break
+        case 'dev':
+          showToast(tr.updateDev)
+          break
+        case 'error':
+          showToast(tr.updateError)
+          break
+        default:
+          break
+      }
+    })
     return () => {
       unsubAdded()
       unsubTheme()
       unsubNav()
+      unsubUpdate()
     }
   }, [refresh, setShowSettings, setTheme, showToast])
 

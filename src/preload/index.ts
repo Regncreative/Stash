@@ -6,8 +6,11 @@ import type {
   FileFilter,
   Shelf,
   ShelfStats,
-  StashFile
+  StashFile,
+  UpdateStatus
 } from '../shared/types'
+
+export type { UpdateStatus }
 
 export interface StashApi {
   // Window
@@ -48,10 +51,16 @@ export interface StashApi {
   getSystemTheme: () => Promise<'light' | 'dark'>
   notify: (title: string, body: string) => Promise<void>
 
+  // Updates
+  checkForUpdates: () => Promise<UpdateStatus>
+  installUpdate: () => Promise<boolean>
+  getUpdateStatus: () => Promise<UpdateStatus>
+
   // Events
   onFilesAdded: (cb: (result: AddFilesResult) => void) => () => void
   onThemeChanged: (cb: (theme: 'light' | 'dark') => void) => () => void
   onNavigateSettings: (cb: () => void) => () => void
+  onUpdateStatus: (cb: (status: UpdateStatus) => void) => () => void
 }
 
 const api: StashApi = {
@@ -86,6 +95,10 @@ const api: StashApi = {
   getSystemTheme: () => ipcRenderer.invoke(IpcChannels.THEME_GET),
   notify: (title, body) => ipcRenderer.invoke(IpcChannels.NOTIFY, title, body),
 
+  checkForUpdates: () => ipcRenderer.invoke(IpcChannels.UPDATE_CHECK),
+  installUpdate: () => ipcRenderer.invoke(IpcChannels.UPDATE_INSTALL),
+  getUpdateStatus: () => ipcRenderer.invoke(IpcChannels.UPDATE_GET_STATUS),
+
   onFilesAdded: (cb) => {
     const handler = (_: IpcRendererEvent, result: AddFilesResult) => cb(result)
     ipcRenderer.on(IpcChannels.FILES_ADDED_EVENT, handler)
@@ -100,6 +113,11 @@ const api: StashApi = {
     const handler = () => cb()
     ipcRenderer.on('navigate:settings', handler)
     return () => ipcRenderer.removeListener('navigate:settings', handler)
+  },
+  onUpdateStatus: (cb) => {
+    const handler = (_: IpcRendererEvent, status: UpdateStatus) => cb(status)
+    ipcRenderer.on(IpcChannels.UPDATE_STATUS, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.UPDATE_STATUS, handler)
   }
 }
 

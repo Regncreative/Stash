@@ -70,6 +70,16 @@ export interface FileProperties {
   modifiedAt: number | null
 }
 
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
+  | { state: 'dev' }
+
 export const DEFAULT_SHELVES: Omit<Shelf, 'id' | 'createdAt'>[] = [
   { name: 'İş', icon: 'briefcase', color: '#2563EB', sortOrder: 0 },
   { name: 'Kişisel', icon: 'heart', color: '#E74856', sortOrder: 1 },

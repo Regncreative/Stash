@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
 import type { ThemeMode } from '@shared/types'
 import { cn } from '@/lib/utils'
 import { tr } from '@/lib/i18n'
+import type { UpdateStatus } from '@shared/types'
 
 const ACCENTS = ['#2563EB', '#0078D4', '#8764B8', '#038387', '#00B294', '#CA5010', '#E74856', '#C239B3']
 
@@ -20,6 +22,13 @@ export function SettingsPanel() {
   const shelves = useStashStore((s) => s.shelves)
   const refresh = useStashStore((s) => s.refresh)
   const showToast = useStashStore((s) => s.showToast)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+
+  useEffect(() => {
+    void window.stash.getUpdateStatus().then(setUpdateStatus)
+    const unsub = window.stash.onUpdateStatus(setUpdateStatus)
+    return unsub
+  }, [])
 
   if (!settings) return null
 
@@ -161,6 +170,33 @@ export function SettingsPanel() {
               </li>
             ))}
           </ul>
+        </SettingsCard>
+
+        <SettingsCard title={tr.checkUpdates}>
+          <button
+            type="button"
+            className="w-full rounded-[10px] bg-[var(--pill)] px-3 py-2.5 text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill-hover)]"
+            onClick={() => void window.stash.checkForUpdates()}
+          >
+            {updateStatus.state === 'checking' ? tr.updateChecking : tr.checkUpdates}
+          </button>
+          {updateStatus.state === 'downloaded' && (
+            <button
+              type="button"
+              className="w-full rounded-[10px] bg-[var(--accent)] px-3 py-2.5 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+              onClick={() => void window.stash.installUpdate()}
+            >
+              {tr.installAndRestart}
+            </button>
+          )}
+          {updateStatus.state === 'downloading' && (
+            <p className="text-center text-[12px] text-[var(--muted-foreground)]">
+              {tr.updateDownloading(updateStatus.percent)}
+            </p>
+          )}
+          {updateStatus.state === 'error' && (
+            <p className="text-center text-[12px] text-[var(--destructive)]">{tr.updateError}</p>
+          )}
         </SettingsCard>
 
         <p className="pt-1 text-center text-[11px] text-[var(--muted-foreground)]">{tr.footer}</p>

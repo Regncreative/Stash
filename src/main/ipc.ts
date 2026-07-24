@@ -7,6 +7,7 @@ import * as db from './database'
 import { getPanelWindow } from './window'
 import { syncAutoLaunch } from './auto-launch'
 import { reregisterHotkey } from './hotkey'
+import { checkForUpdates, getUpdateStatus, installUpdateNow } from './updater'
 import type { FileInput } from './database'
 import type { AppSettings } from '../shared/types'
 
@@ -364,6 +365,13 @@ export function registerIpcHandlers(): void {
       // ignore
     }
   })
+
+  ipcMain.handle(IpcChannels.UPDATE_CHECK, () => checkForUpdates(true))
+  ipcMain.handle(IpcChannels.UPDATE_INSTALL, () => {
+    installUpdateNow()
+    return true
+  })
+  ipcMain.handle(IpcChannels.UPDATE_GET_STATUS, () => getUpdateStatus())
 }
 
 function enrichExists<T extends { absolutePath: string; exists?: boolean }>(file: T): T {

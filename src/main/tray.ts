@@ -1,6 +1,7 @@
 import { Tray, Menu, nativeImage, app, NativeImage } from 'electron'
 import { join } from 'path'
 import { showPanel, togglePanel, hidePanel, setQuitting, getPanelWindow } from './window'
+import { checkForUpdates, getUpdateStatus, installUpdateNow } from './updater'
 
 let tray: Tray | null = null
 
@@ -72,7 +73,12 @@ export function createTray(): Tray {
     {
       label: 'Güncellemeleri denetle',
       click: () => {
-        // Placeholder for future updater
+        const status = getUpdateStatus()
+        if (status.state === 'downloaded') {
+          installUpdateNow()
+          return
+        }
+        void checkForUpdates(true)
       }
     },
     { type: 'separator' },
