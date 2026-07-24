@@ -1,18 +1,30 @@
-node_modules
+# Logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build / packaging
 dist
 out
 release
-*.log
-.DS_Store
-Thumbs.db
-*.local
+*.tsbuildinfo
+
+# Env
 .env
 .env.*
 !.env.example
+*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
 .vscode/*
 !.vscode/extensions.json
+
+# App data
 *.db
 *.db-journal
 coverage
-.idea
-*.tsbuildinfo
