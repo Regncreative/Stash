@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Dark (default) — matches mockup ── */
+:root,
+.dark {
+  --bg: #111827;
+  --bg-glass: rgba(17, 24, 39, 0.97);
+  --card: #1a2233;
+  --card-hover: #222b3d;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.16);
+  --accent-glow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  --foreground: #ffffff;
+  --muted-foreground: #9ca3af;
+  --border: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --pill: #1a2233;
+  --pill-hover: #222b3d;
+  --drop-bg: rgba(255, 255, 255, 0.02);
+  --drop-border: rgba(255, 255, 255, 0.12);
+  --shadow: none;
+  --hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  --destructive: #f87171;
+  --preview-bg: #1a2233;
+  --scrollbar: rgba(156, 163, 175, 0.4);
+}
+
+/* ── Light ── */
+.light {
+  --bg: #f3f4f6;
+  --bg-glass: rgba(243, 244, 246, 0.98);
+  --card: #ffffff;
+  --card-hover: #f8fafc;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --accent-glow: 0 6px 18px rgba(37, 99, 235, 0.28);
+  --foreground: #111827;
+  --muted-foreground: #6b7280;
+  --border: rgba(0, 0, 0, 0.08);
+  --card-border: rgba(0, 0, 0, 0.06);
+  --pill: #e5e7eb;
+  --pill-hover: #d1d5db;
+  --drop-bg: rgba(0, 0, 0, 0.02);
+  --drop-border: rgba(0, 0, 0, 0.14);
+  --shadow: none;
+  --hover-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  --destructive: #dc2626;
+  --preview-bg: #ffffff;
+  --scrollbar: rgba(107, 114, 128, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-user-drag: none;
+}
+
+.stash-drag-source {
+  -webkit-user-drag: element !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+}
+
+button,
+input {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  outline: none;
+}
+
+.scroll-autohide {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-autohide.is-scrolling,
+.scroll-autohide:hover {
+  scrollbar-color: var(--scrollbar) transparent;
+}
+.scroll-autohide::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-autohide::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-autohide::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 99px;
+}
+.scroll-autohide.is-scrolling::-webkit-scrollbar-thumb,
+.scroll-autohide:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+}
+
+.app-shell {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.truncate-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  transition: background 150ms ease, color 150ms ease;
+}
+.icon-btn:hover {
+  background: var(--pill-hover);
+  color: var(--foreground);
+}
+.icon-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

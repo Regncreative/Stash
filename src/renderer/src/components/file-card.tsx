@@ -1,0 +1,165 @@
+import type { CSSProperties, DragEvent, MouseEvent } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { AlertTriangle, Pin } from 'lucide-react'
+import type { StashFile } from '@shared/types'
+import { FileTypeIcon } from './file-icon'
+import { formatBytes, formatClock } from '@/lib/format'
+import { useStashStore } from '@/stores/stash-store'
+import { cn } from '@/lib/utils'
+import { IMAGE_EXTS } from '@shared/types'
+import { tr } from '@/lib/i18n'
+
+/** Process-wide cache so icons persist across virtualized mount/unmount. */
+const iconMemo = new Map<string, string | null>()
+
+interface FileCardProps {
+  file: StashFile
+  style?: CSSProperties
+  index?: number
+}
+
+export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileCardProps) {
+  const openContextMenu = useStashStore((s) => s.openContextMenu)
+  const refresh = useStashStore((s) => s.refresh)
+  const [preview, setPreview] = useState(false)
+  const [icon, setIcon] = useState<string | null>(() => iconMemo.get(file.id) ?? null)
+
+  useEffect(() => {
+    if (!file.exists || file.isDirectory) return
+    if (iconMemo.has(file.id)) {
+      setIcon(iconMemo.get(file.id) ?? null)
+      return
+    }
+    let alive = true
+    void window.stash.getFileIcon(file.id).then((url) => {
+      iconMemo.set(file.id, url)
+      if (alive) setIcon(url)
+    })
+    return () => {
+      alive = false
+    }
+  }, [file.id, file.exists, file.isDirectory])
+
+  const onDragStart = useCallback(
+    (e: DragEvent) => {
+      if (!file.exists) {
+        e.preventDefault()
+        return
+      }
+      // Required for Electron native file drag-out
+      e.preventDefault()
+      // Mark outbound so DropZone doesn't treat this as an inbound drop
+      document.body.dataset.stashDragging = '1'
+      window.stash.startDrag(file.id)
+      const clear = () => {
+        delete document.body.dataset.stashDragging
+        window.removeEventListener('dragend', clear)
+        window.removeEventListener('mouseup', clear)
+      }
+      window.addEventListener('dragend', clear)
+      window.addEventListener('mouseup', clear)
+    },
+    [file]
+  )
+
+  const togglePin = async (e: MouseEvent) => {
+    e.stopPropagation()
+    await window.stash.pinFile(file.id, !file.isPinned)
+    await refresh()
+  }
+
+  const showImagePreview =
+    preview && file.exists && !file.isDirectory && IMAGE_EXTS.has(file.extension)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 32, delay: Math.min(index, 8) * 0.03 }}
+      style={style}
+      className="mx-5 h-[72px]"
+    >
+      <div
+        className={cn(
+          'stash-drag-source group relative flex h-full cursor-grab items-center gap-3.5 rounded-[14px] px-3.5',
+          'bg-[var(--card)]',
+          'transition-all duration-150 ease-out active:cursor-grabbing',
+          'hover:bg-[var(--card-hover)] hover:shadow-[var(--hover-shadow)]',
+          !file.exists && 'opacity-55'
+        )}
+        draggable={file.exists}
+        onDragStart={onDragStart}
+        onDoubleClick={() => void window.stash.openFile(file.id)}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          openContextMenu(e.clientX, e.clientY, file.id)
+        }}
+        onMouseEnter={() => setPreview(true)}
+        onMouseLeave={() => setPreview(false)}
+        role="listitem"
+        aria-label={file.name}
+      >
+        <div className="relative shrink-0">
+          {icon ? (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-black/5 dark:bg-white/5">
+              <img src={icon} alt="" className="h-7 w-7 object-contain" draggable={false} />
+            </div>
+          ) : (
+            <FileTypeIcon file={file} />
+          )}
+          {!file.exists && (
+            <AlertTriangle className="absolute -right-1 -top-1 h-3.5 w-3.5 text-amber-400" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate-path text-[15px] font-medium leading-tight text-[var(--foreground)]">
+            {file.name}
+          </div>
+          <div className="mt-1.5 text-[13px] leading-none text-[var(--muted-foreground)]">
+            {!file.exists ? (
+              <span className="text-amber-500">{tr.fileNotFound}</span>
+            ) : file.isDirectory ? (
+              tr.folder
+            ) : (
+              formatBytes(file.size)
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-[13px] tabular-nums leading-none text-[var(--muted-foreground)]">
+            {formatClock(file.addedAt)}
+          </span>
+          <button
+            type="button"
+            onClick={togglePin}
+            className={cn(
+              'rounded-md p-1 transition-colors duration-150',
+              file.isPinned
+                ? 'text-[var(--accent)]'
+                : 'text-[var(--muted-foreground)] opacity-40 group-hover:opacity-100'
+            )}
+            aria-label={file.isPinned ? tr.unpin : tr.pin}
+          >
+            <Pin size={16} strokeWidth={1.75} fill={file.isPinned ? 'currentColor' : 'none'} />
+          </button>
+        </div>
+
+        {showImagePreview && (
+          <div className="pointer-events-none absolute left-16 top-[calc(100%-4px)] z-30 overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--preview-bg)] shadow-[var(--hover-shadow)]">
+            <img
+              src={`file://${file.absolutePath.replace(/\\/g, '/')}`}
+              alt=""
+              className="max-h-36 max-w-[200px] object-contain"
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+})

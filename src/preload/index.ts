@@ -1,0 +1,109 @@
+import { contextBridge, ipcRenderer, webUtils, IpcRendererEvent } from 'electron'
+import { IpcChannels } from '../shared/ipc'
+import type {
+  AddFilesResult,
+  AppSettings,
+  FileFilter,
+  Shelf,
+  ShelfStats,
+  StashFile
+} from '../shared/types'
+
+export interface StashApi {
+  // Window
+  hideWindow: () => Promise<void>
+  setPinned: (pinned: boolean) => Promise<boolean>
+  isPinned: () => Promise<boolean>
+
+  // Files
+  listFiles: (shelfId?: string | null) => Promise<StashFile[]>
+  searchFiles: (query: string, shelfId?: string | null) => Promise<StashFile[]>
+  addFiles: (paths: string[], shelfId?: string) => Promise<AddFilesResult>
+  removeFile: (id: string) => Promise<boolean>
+  pinFile: (id: string, pinned: boolean) => Promise<boolean>
+  moveFile: (id: string, shelfId: string) => Promise<boolean>
+  openFile: (id: string) => Promise<{ ok: boolean; error?: string }>
+  revealFile: (id: string) => Promise<{ ok: boolean; error?: string }>
+  copyPath: (id: string) => Promise<boolean>
+  getProperties: (id: string) => Promise<{ ok: boolean; error?: string }>
+  checkExists: (id: string) => Promise<boolean>
+  getFileIcon: (id: string) => Promise<string | null>
+  startDrag: (id: string) => void
+  getPathForFile: (file: File) => string
+
+  // Shelves
+  listShelves: () => Promise<Shelf[]>
+  createShelf: (input: { name: string; icon?: string; color?: string }) => Promise<Shelf>
+  renameShelf: (id: string, name: string) => Promise<boolean>
+  deleteShelf: (id: string) => Promise<boolean>
+  updateShelf: (
+    id: string,
+    updates: Partial<{ name: string; icon: string; color: string; sortOrder: number }>
+  ) => Promise<boolean>
+
+  // Stats & settings
+  getStats: () => Promise<ShelfStats>
+  getSettings: () => Promise<AppSettings>
+  setSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
+  getSystemTheme: () => Promise<'light' | 'dark'>
+  notify: (title: string, body: string) => Promise<void>
+
+  // Events
+  onFilesAdded: (cb: (result: AddFilesResult) => void) => () => void
+  onThemeChanged: (cb: (theme: 'light' | 'dark') => void) => () => void
+  onNavigateSettings: (cb: () => void) => () => void
+}
+
+const api: StashApi = {
+  hideWindow: () => ipcRenderer.invoke(IpcChannels.WINDOW_HIDE),
+  setPinned: (pinned) => ipcRenderer.invoke(IpcChannels.WINDOW_PIN, pinned),
+  isPinned: () => ipcRenderer.invoke(IpcChannels.WINDOW_IS_PINNED),
+
+  listFiles: (shelfId) => ipcRenderer.invoke(IpcChannels.FILES_LIST, shelfId),
+  searchFiles: (query, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_SEARCH, query, shelfId),
+  addFiles: (paths, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_ADD, paths, shelfId),
+  removeFile: (id) => ipcRenderer.invoke(IpcChannels.FILES_REMOVE, id),
+  pinFile: (id, pinned) => ipcRenderer.invoke(IpcChannels.FILES_PIN, id, pinned),
+  moveFile: (id, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_MOVE, id, shelfId),
+  openFile: (id) => ipcRenderer.invoke(IpcChannels.FILES_OPEN, id),
+  revealFile: (id) => ipcRenderer.invoke(IpcChannels.FILES_REVEAL, id),
+  copyPath: (id) => ipcRenderer.invoke(IpcChannels.FILES_COPY_PATH, id),
+  getProperties: (id) => ipcRenderer.invoke(IpcChannels.FILES_PROPERTIES, id),
+  checkExists: (id) => ipcRenderer.invoke(IpcChannels.FILES_CHECK_EXISTS, id),
+  getFileIcon: (id) => ipcRenderer.invoke(IpcChannels.FILES_ICON, id),
+  startDrag: (id) => ipcRenderer.send(IpcChannels.FILES_START_DRAG, id),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+
+  listShelves: () => ipcRenderer.invoke(IpcChannels.SHELVES_LIST),
+  createShelf: (input) => ipcRenderer.invoke(IpcChannels.SHELVES_CREATE, input),
+  renameShelf: (id, name) => ipcRenderer.invoke(IpcChannels.SHELVES_RENAME, id, name),
+  deleteShelf: (id) => ipcRenderer.invoke(IpcChannels.SHELVES_DELETE, id),
+  updateShelf: (id, updates) => ipcRenderer.invoke(IpcChannels.SHELVES_UPDATE, id, updates),
+
+  getStats: () => ipcRenderer.invoke(IpcChannels.STATS_GET),
+  getSettings: () => ipcRenderer.invoke(IpcChannels.SETTINGS_GET),
+  setSettings: (partial) => ipcRenderer.invoke(IpcChannels.SETTINGS_SET, partial),
+  getSystemTheme: () => ipcRenderer.invoke(IpcChannels.THEME_GET),
+  notify: (title, body) => ipcRenderer.invoke(IpcChannels.NOTIFY, title, body),
+
+  onFilesAdded: (cb) => {
+    const handler = (_: IpcRendererEvent, result: AddFilesResult) => cb(result)
+    ipcRenderer.on(IpcChannels.FILES_ADDED_EVENT, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.FILES_ADDED_EVENT, handler)
+  },
+  onThemeChanged: (cb) => {
+    const handler = (_: IpcRendererEvent, theme: 'light' | 'dark') => cb(theme)
+    ipcRenderer.on(IpcChannels.THEME_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.THEME_CHANGED, handler)
+  },
+  onNavigateSettings: (cb) => {
+    const handler = () => cb()
+    ipcRenderer.on('navigate:settings', handler)
+    return () => ipcRenderer.removeListener('navigate:settings', handler)
+  }
+}
+
+contextBridge.exposeInMainWorld('stash', api)
+
+// Re-export filter type for consumers
+export type { FileFilter }
