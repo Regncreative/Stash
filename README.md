@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/hero.jpg" alt="Stash floating panel on Windows" width="900">
+  <img src="docs/demo.gif" alt="Stash demo — drag files onto the tray shelf" width="900">
 </p>
 
 ## What is Stash?
@@ -138,10 +138,10 @@ docs/             README images
 - [x] Themes, accents, localization (TR/EN)
 - [x] Auto update via GitHub Releases
 - [x] Idle opacity & missing-file cleanup
+- [x] Official demo GIF in README
 - [ ] Plugins / extensions
 - [ ] Optional cloud sync
 - [ ] Smarter / AI-assisted search
-- [ ] Official demo GIF in README
 
 ## Releases & auto-update
 
