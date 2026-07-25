@@ -47,9 +47,21 @@ Designed to feel like a built-in Windows 11 feature (Fluent Design), not a typic
 
 ## Screenshots
 
-| Panel | Settings | Tray |
-|:---:|:---:|:---:|
-| <img src="docs/panel.jpg" width="280" alt="Stash main panel"> | <img src="docs/settings.jpg" width="280" alt="Stash settings"> | <img src="docs/tray.jpg" width="280" alt="Stash in the system tray"> |
+<p align="center">
+  <img src="docs/panel-dark.jpg" alt="Stash panel — dark mode" width="360">
+  &nbsp;
+  <img src="docs/panel-light.jpg" alt="Stash panel — light mode" width="360">
+</p>
+
+<p align="center">
+  <img src="docs/settings.jpg" alt="Stash settings" width="360">
+  &nbsp;
+  <img src="docs/settings-behavior.jpg" alt="Stash settings — sorting and shelves" width="360">
+</p>
+
+<p align="center">
+  <img src="docs/tray.jpg" alt="Stash in the Windows system tray" width="420">
+</p>
 
 ## Installation
 
