@@ -84,7 +84,7 @@ export function DropZone({ children }: DropZoneProps) {
       window.removeEventListener('dragover', onDragOver)
       window.removeEventListener('drop', onDrop)
     }
-  }, [activeShelfId, settings, refresh, setDropActive, showToast])
+  }, [activeShelfId, settings, refresh, setDropActive, showToast, t])
 
   return (
     <div className={cn('relative flex h-full min-h-0 flex-col', dropActive && 'drop-active')}>

@@ -1,5 +1,8 @@
 # Stash
 
+[![CI](https://github.com/Regncreative/Stash/actions/workflows/ci.yml/badge.svg)](https://github.com/Regncreative/Stash/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Regncreative/Stash/actions/workflows/codeql.yml/badge.svg)](https://github.com/Regncreative/Stash/actions/workflows/codeql.yml)
+
 A modern file shelf for Windows — collect, organize and drag files from the system tray.
 
 Designed to feel like a built-in Windows 11 feature (Fluent Design), not a typical Electron utility.
