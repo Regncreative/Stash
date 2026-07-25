@@ -87,7 +87,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": false,
       "createStartMenuShortcut": true,
-      "shortcutName": "Stash"
+      "shortcutName": "Stash",
+      "artifactName": "Stash-Setup-${version}.${ext}"
     }
   }
 }
