@@ -10,6 +10,11 @@
 </p>
 
 <p align="center">
+  <a href="https://stash.regncreative.com"><strong>stash.regncreative.com</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://stash.regncreative.com"><img src="https://img.shields.io/badge/website-stash.regncreative.com-2563EB" alt="Website"></a>
   <a href="https://github.com/Regncreative/Stash/actions/workflows/ci.yml"><img src="https://github.com/Regncreative/Stash/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/Regncreative/Stash/actions/workflows/codeql.yml"><img src="https://github.com/Regncreative/Stash/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://github.com/Regncreative/Stash/releases/latest"><img src="https://img.shields.io/github/v/release/Regncreative/Stash?label=latest%20release" alt="Latest release"></a>
@@ -67,7 +72,7 @@ Designed to feel like a built-in Windows 11 feature (Fluent Design), not a typic
 
 ### For everyone (recommended)
 
-1. Download **[Stash-Setup.exe](https://github.com/Regncreative/Stash/releases/latest)** from the latest release
+1. Download from **[stash.regncreative.com](https://stash.regncreative.com)** or **[Stash-Setup.exe](https://github.com/Regncreative/Stash/releases/latest)**
 2. Run the installer
 3. Launch **Stash** — it appears in the system tray
 4. Click the tray icon (or press `Ctrl+Shift+Space`) to open the panel
