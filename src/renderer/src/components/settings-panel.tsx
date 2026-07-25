@@ -59,7 +59,8 @@ export function SettingsPanel() {
     { id: 'size', label: t.sortSize }
   ]
 
-  const idlePercent = Math.round(settings.idleOpacity * 100)
+  const idleTimeoutSec = settings.idleTimeoutSec ?? 10
+  const idlePercent = Math.round((settings.idleOpacity ?? 0.4) * 100)
 
   const clearMissing = async () => {
     if (clearing) return
@@ -220,20 +221,20 @@ export function SettingsPanel() {
             </div>
           </Field>
 
-          <Field label={`${t.idleTimeout} · ${settings.idleTimeoutSec}s`}>
+          <Field label={`${t.idleTimeout} · ${idleTimeoutSec}s`}>
             <input
               type="range"
               min={5}
               max={60}
               step={5}
-              value={settings.idleTimeoutSec}
+              value={idleTimeoutSec}
               onChange={(e) => {
                 void updateSettings({ idleTimeoutSec: Number(e.target.value) })
               }}
               className="stash-range"
               aria-valuemin={5}
               aria-valuemax={60}
-              aria-valuenow={settings.idleTimeoutSec}
+              aria-valuenow={idleTimeoutSec}
               aria-label={t.idleTimeout}
             />
             <p className="mt-1.5 text-[11px] leading-snug text-[var(--muted-foreground)]">

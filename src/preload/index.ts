@@ -63,6 +63,8 @@ export interface StashApi {
   onThemeChanged: (cb: (theme: 'light' | 'dark') => void) => () => void
   onNavigateSettings: (cb: () => void) => () => void
   onUpdateStatus: (cb: (status: UpdateStatus) => void) => () => void
+  onPanelShown: (cb: () => void) => () => void
+  onPanelHidden: (cb: () => void) => () => void
 }
 
 const api: StashApi = {
@@ -123,6 +125,16 @@ const api: StashApi = {
     const handler = (_: IpcRendererEvent, status: UpdateStatus) => cb(status)
     ipcRenderer.on(IpcChannels.UPDATE_STATUS, handler)
     return () => ipcRenderer.removeListener(IpcChannels.UPDATE_STATUS, handler)
+  },
+  onPanelShown: (cb) => {
+    const handler = () => cb()
+    ipcRenderer.on(IpcChannels.WINDOW_SHOWN, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_SHOWN, handler)
+  },
+  onPanelHidden: (cb) => {
+    const handler = () => cb()
+    ipcRenderer.on(IpcChannels.WINDOW_HIDE, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_HIDE, handler)
   }
 }
 

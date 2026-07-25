@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Package } from 'lucide-react'
 import { FileCard } from './file-card'
 import { DropFooter } from './drop-footer'
@@ -32,6 +32,7 @@ export function FileList() {
   const [height, setHeight] = useState(400)
   const [scrolling, setScrolling] = useState(false)
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollRaf = useRef<number | null>(null)
 
   useEffect(() => {
     const el = containerRef.current
@@ -50,11 +51,22 @@ export function FileList() {
     }
   }, [activeShelfId, filter, searchQuery])
 
+  useEffect(() => {
+    return () => {
+      if (scrollTimer.current) clearTimeout(scrollTimer.current)
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
+    }
+  }, [])
+
   const onScroll = useCallback(() => {
-    setScrollTop(containerRef.current?.scrollTop ?? 0)
     setScrolling(true)
     if (scrollTimer.current) clearTimeout(scrollTimer.current)
-    scrollTimer.current = setTimeout(() => setScrolling(false), 700)
+    scrollTimer.current = setTimeout(() => setScrolling(false), 150)
+
+    if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
+    scrollRaf.current = requestAnimationFrame(() => {
+      setScrollTop(containerRef.current?.scrollTop ?? 0)
+    })
   }, [])
 
   const totalHeight = visible.length * ITEM_HEIGHT
@@ -103,11 +115,7 @@ export function FileList() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <motion.div
-        key={activeShelfId ?? 'all'}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.15 }}
+      <div
         ref={containerRef}
         onScroll={onScroll}
         className={cn(
@@ -117,28 +125,27 @@ export function FileList() {
         role="list"
         aria-label="Stashed files"
       >
-        <div style={{ height: totalHeight, position: 'relative' }}>
-          <AnimatePresence initial={false}>
-            {slice.map((file, i) => {
-              const index = startIndex + i
-              return (
-                <div
-                  key={file.id}
-                  style={{
-                    position: 'absolute',
-                    top: index * ITEM_HEIGHT,
-                    left: 0,
-                    right: 0,
-                    height: ITEM_HEIGHT
-                  }}
-                >
-                  <FileCard file={file} index={index} />
-                </div>
-              )
-            })}
-          </AnimatePresence>
+        <div style={{ height: totalHeight, position: 'relative', overflow: 'clip' }}>
+          {slice.map((file, i) => {
+            const index = startIndex + i
+            return (
+              <div
+                key={file.id}
+                style={{
+                  position: 'absolute',
+                  top: index * ITEM_HEIGHT,
+                  left: 0,
+                  right: 0,
+                  height: ITEM_HEIGHT,
+                  overflow: 'hidden'
+                }}
+              >
+                <FileCard file={file} index={index} allowPreview={!scrolling} />
+              </div>
+            )
+          })}
         </div>
-      </motion.div>
+      </div>
       <DropFooter />
     </div>
   )

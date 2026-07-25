@@ -6,7 +6,17 @@ import type {
   ShelfStats,
   StashFile
 } from '@shared/types'
-import { matchesFilter } from '@shared/types'
+import { matchesFilter, normalizeSettings } from '@shared/types'
+
+function pickShelfId(
+  preferred: string | null | undefined,
+  shelves: Shelf[],
+  fallback?: string | null
+): string | null {
+  if (preferred && shelves.some((s) => s.id === preferred)) return preferred
+  if (fallback && shelves.some((s) => s.id === fallback)) return fallback
+  return shelves[0]?.id ?? null
+}
 
 export interface ConfirmRequest {
   title: string
@@ -51,6 +61,7 @@ interface StashState {
   setFilter: (f: FileFilter) => void
   setPinned: (p: boolean) => Promise<void>
   setShowSettings: (v: boolean) => void
+  resetPanelUi: () => void
   setTheme: (t: 'light' | 'dark') => void
   showToast: (message: string) => void
   clearToast: () => void
@@ -97,7 +108,7 @@ export const useStashStore = create<StashState>((set, get) => ({
     document.documentElement.classList.toggle('dark', theme === 'dark')
     document.documentElement.lang = settings.language
 
-    const activeShelfId = settings.defaultShelfId || shelves[0]?.id || null
+    const activeShelfId = pickShelfId(settings.lastShelfId, shelves, settings.defaultShelfId)
     const [files, stats] = await Promise.all([
       window.stash.listFiles(null),
       window.stash.getStats()
@@ -108,10 +119,11 @@ export const useStashStore = create<StashState>((set, get) => ({
       shelves,
       files,
       stats,
-      settings,
+      settings: normalizeSettings(settings),
       activeShelfId,
       pinned,
-      theme
+      theme,
+      showSettings: false
     })
   },
 
@@ -123,10 +135,18 @@ export const useStashStore = create<StashState>((set, get) => ({
       window.stash.getSettings()
     ])
     document.documentElement.lang = settings.language
-    set({ shelves, files, stats, settings })
+    const activeShelfId = pickShelfId(
+      get().activeShelfId,
+      shelves,
+      settings.lastShelfId || settings.defaultShelfId
+    )
+    set({ shelves, files, stats, settings: normalizeSettings(settings), activeShelfId })
   },
 
-  setActiveShelf: (id) => set({ activeShelfId: id }),
+  setActiveShelf: (id) => {
+    set({ activeShelfId: id, showSettings: false })
+    if (id) void get().updateSettings({ lastShelfId: id })
+  },
   setSearch: (q) => set({ searchQuery: q }),
   setFilter: (f) => set({ filter: f }),
 
@@ -136,6 +156,17 @@ export const useStashStore = create<StashState>((set, get) => ({
   },
 
   setShowSettings: (v) => set({ showSettings: v }),
+  resetPanelUi: () => {
+    const pending = get().confirm
+    set({
+      showSettings: false,
+      contextMenu: null,
+      confirm: null,
+      searchQuery: '',
+      dropActive: false
+    })
+    pending?.resolve(false)
+  },
   setTheme: (t) => {
     document.documentElement.classList.toggle('light', t === 'light')
     document.documentElement.classList.toggle('dark', t === 'dark')
@@ -153,10 +184,10 @@ export const useStashStore = create<StashState>((set, get) => ({
     const prev = get().settings
     // Optimistic update so toggles/sort apply immediately (even before IPC).
     if (prev) {
-      set({ settings: { ...prev, ...partial } })
+      set({ settings: normalizeSettings({ ...prev, ...partial }) })
     }
     try {
-      const next = await window.stash.setSettings(partial)
+      const next = normalizeSettings(await window.stash.setSettings(partial))
       set({ settings: next })
       if (partial.language) {
         document.documentElement.lang = next.language

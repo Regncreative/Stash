@@ -21,6 +21,16 @@ export function Header() {
   }, [searchOpen])
 
   useEffect(() => {
+    const closeSearch = () => setSearchOpen(false)
+    const unsubShown = window.stash.onPanelShown(closeSearch)
+    const unsubHidden = window.stash.onPanelHidden(closeSearch)
+    return () => {
+      unsubShown()
+      unsubHidden()
+    }
+  }, [])
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (searchOpen || searchQuery) {

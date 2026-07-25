@@ -44,6 +44,9 @@ export default function App() {
       }
     })
     const unsubNav = window.stash.onNavigateSettings(() => setShowSettings(true))
+    const resetPanelUi = () => useStashStore.getState().resetPanelUi()
+    const unsubShown = window.stash.onPanelShown(resetPanelUi)
+    const unsubHidden = window.stash.onPanelHidden(resetPanelUi)
     const unsubUpdate = window.stash.onUpdateStatus((status) => {
       switch (status.state) {
         case 'available':
@@ -71,6 +74,8 @@ export default function App() {
       unsubAdded()
       unsubTheme()
       unsubNav()
+      unsubShown()
+      unsubHidden()
       unsubUpdate()
     }
   }, [refresh, setShowSettings, setTheme, showToast, t])

@@ -1,5 +1,6 @@
 import type { CSSProperties, DragEvent, MouseEvent } from 'react'
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Pin, Trash2 } from 'lucide-react'
 import type { StashFile } from '@shared/types'
@@ -17,15 +18,24 @@ interface FileCardProps {
   file: StashFile
   style?: CSSProperties
   index?: number
+  /** Hide hover image preview while the list is scrolling (avoids scroll jank). */
+  allowPreview?: boolean
 }
 
-export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileCardProps) {
+export const FileCard = memo(function FileCard({
+  file,
+  style,
+  index = 0,
+  allowPreview = true
+}: FileCardProps) {
   const t = useT()
   const openContextMenu = useStashStore((s) => s.openContextMenu)
   const refresh = useStashStore((s) => s.refresh)
   const showToast = useStashStore((s) => s.showToast)
   const askConfirm = useStashStore((s) => s.askConfirm)
   const [preview, setPreview] = useState(false)
+  const [previewPos, setPreviewPos] = useState<{ left: number; top: number } | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [icon, setIcon] = useState<string | null>(() => iconMemo.get(file.id) ?? null)
 
   useEffect(() => {
@@ -43,6 +53,13 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
       alive = false
     }
   }, [file.id, file.exists, file.isDirectory])
+
+  useEffect(() => {
+    if (!allowPreview) {
+      setPreview(false)
+      setPreviewPos(null)
+    }
+  }, [allowPreview])
 
   const onDragStart = useCallback(
     (e: DragEvent) => {
@@ -87,26 +104,41 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
   }
 
   const showImagePreview =
-    preview && file.exists && !file.isDirectory && IMAGE_EXTS.has(file.extension)
+    allowPreview &&
+    preview &&
+    previewPos &&
+    file.exists &&
+    !file.isDirectory &&
+    IMAGE_EXTS.has(file.extension)
+
+  const openPreview = () => {
+    if (!allowPreview) return
+    const rect = cardRef.current?.getBoundingClientRect()
+    if (!rect) {
+      setPreview(true)
+      return
+    }
+    // Prefer below the row; flip above if near the bottom of the panel.
+    const spaceBelow = window.innerHeight - rect.bottom
+    const top = spaceBelow < 160 ? Math.max(8, rect.top - 148) : rect.bottom - 4
+    setPreviewPos({ left: Math.min(rect.left + 56, window.innerWidth - 220), top })
+    setPreview(true)
+  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        type: 'spring',
-        stiffness: 420,
-        damping: 32,
-        delay: Math.min(index, 8) * 0.03
-      }}
+      transition={{ duration: 0.12, delay: Math.min(index, 6) * 0.015 }}
       style={style}
       className="mx-5 h-[72px]"
     >
       <div
+        ref={cardRef}
         className={cn(
           'stash-drag-source group relative flex h-full items-center gap-3.5 rounded-[14px] px-3.5',
           'bg-[var(--card)]',
-          'transition-all duration-150 ease-out',
+          'transition-colors duration-150 ease-out',
           file.exists
             ? 'cursor-grab active:cursor-grabbing hover:bg-[var(--card-hover)] hover:shadow-[var(--hover-shadow)]'
             : 'cursor-not-allowed opacity-60'
@@ -121,8 +153,11 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
           e.preventDefault()
           openContextMenu(e.clientX, e.clientY, file.id)
         }}
-        onMouseEnter={() => setPreview(true)}
-        onMouseLeave={() => setPreview(false)}
+        onMouseEnter={openPreview}
+        onMouseLeave={() => {
+          setPreview(false)
+          setPreviewPos(null)
+        }}
         role="listitem"
         aria-label={file.exists ? file.name : `${file.name} (${t.fileNotFound})`}
       >
@@ -143,7 +178,8 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
           <div
             className={cn(
               'truncate-path text-[15px] font-medium leading-tight text-[var(--foreground)]',
-              !file.exists && 'text-[var(--muted-foreground)] line-through decoration-[var(--muted-foreground)]/70'
+              !file.exists &&
+                'text-[var(--muted-foreground)] line-through decoration-[var(--muted-foreground)]/70'
             )}
           >
             {file.name}
@@ -185,20 +221,27 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
             <Trash2 size={16} strokeWidth={1.75} />
           </button>
         </div>
+      </div>
 
-        {showImagePreview && (
-          <div className="pointer-events-none absolute left-16 top-[calc(100%-4px)] z-30 overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--preview-bg)] shadow-[var(--hover-shadow)]">
+      {showImagePreview &&
+        previewPos &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[90] overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--preview-bg)] shadow-[var(--hover-shadow)]"
+            style={{ left: previewPos.left, top: previewPos.top }}
+          >
             <img
               src={`file://${file.absolutePath.replace(/\\/g, '/')}`}
               alt=""
               className="max-h-36 max-w-[200px] object-contain"
+              draggable={false}
               onError={(e) => {
                 ;(e.target as HTMLImageElement).style.display = 'none'
               }}
             />
-          </div>
+          </div>,
+          document.body
         )}
-      </div>
     </motion.div>
   )
 })

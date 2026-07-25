@@ -3,6 +3,7 @@
 export const IpcChannels = {
   // Window
   WINDOW_HIDE: 'window:hide',
+  WINDOW_SHOWN: 'window:shown',
   WINDOW_PIN: 'window:pin',
   WINDOW_IS_PINNED: 'window:is-pinned',
   WINDOW_BLUR: 'window:blur',

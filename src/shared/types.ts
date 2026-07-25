@@ -48,6 +48,8 @@ export interface AppSettings {
   language: AppLanguage
   openHotkey: string
   defaultShelfId: string
+  /** Last shelf the user viewed — restored when the panel opens. */
+  lastShelfId: string
   notifications: boolean
   /** How to order files within a shelf (pinned still first). */
   fileSort: FileSort
@@ -102,10 +104,31 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'tr',
   openHotkey: 'CommandOrControl+Shift+Space',
   defaultShelfId: '',
+  lastShelfId: '',
   notifications: true,
   fileSort: 'added',
   idleOpacity: 0.4,
   idleTimeoutSec: 10
+}
+
+/** Ensure settings always have valid numeric/enum fields (older DBs / partial IPC). */
+export function normalizeSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
+  const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) }
+  s.language = s.language === 'en' ? 'en' : 'tr'
+  const idle = Number(s.idleOpacity)
+  s.idleOpacity = Number.isFinite(idle)
+    ? Math.min(0.7, Math.max(0.1, idle))
+    : DEFAULT_SETTINGS.idleOpacity
+  const timeout = Number(s.idleTimeoutSec)
+  s.idleTimeoutSec = Number.isFinite(timeout)
+    ? Math.min(60, Math.max(5, Math.round(timeout)))
+    : DEFAULT_SETTINGS.idleTimeoutSec
+  if (!['added', 'name', 'recent', 'size'].includes(String(s.fileSort))) {
+    s.fileSort = 'added'
+  }
+  s.notifications = s.notifications !== false
+  s.startWithWindows = s.startWithWindows === true
+  return s
 }
 
 export const IMAGE_EXTS = new Set([

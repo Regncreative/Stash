@@ -178,9 +178,13 @@ export function showPanel(trayBounds?: Rectangle): void {
   setPanelOpacity(1, false)
   panelWindow.show()
   panelWindow.focus()
+  panelWindow.webContents.send(IpcChannels.WINDOW_SHOWN)
 }
 
 export function hidePanel(): void {
+  if (panelWindow && !panelWindow.isDestroyed()) {
+    panelWindow.webContents.send(IpcChannels.WINDOW_HIDE)
+  }
   panelWindow?.hide()
 }
 

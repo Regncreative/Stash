@@ -8,9 +8,9 @@ import {
   DEFAULT_SHELVES,
   Shelf,
   ShelfStats,
-  StashFile
+  StashFile,
+  normalizeSettings
 } from '../../shared/types'
-import { normalizeLanguage } from '../../shared/i18n'
 
 let db: Database.Database | null = null
 
@@ -203,6 +203,8 @@ export function deleteShelf(id: string): void {
     throw new Error('Cannot delete the last shelf')
   }
   getDb().prepare('DELETE FROM shelves WHERE id = ?').run(id)
+  // Heal default/last shelf if the deleted one was selected.
+  getSettings()
 }
 
 // ── Files ────────────────────────────────────────────────
@@ -361,50 +363,40 @@ export function getSettings(): AppSettings {
       setSettingRaw(getDb(), key, DEFAULT_SETTINGS[key])
     }
   }
-  if (!settings.defaultShelfId) {
-    const first = listShelves()[0]
-    if (first) settings.defaultShelfId = first.id
+  const shelves = listShelves()
+  const shelfIds = new Set(shelves.map((s) => s.id))
+  if (!settings.defaultShelfId || !shelfIds.has(settings.defaultShelfId)) {
+    settings.defaultShelfId = shelves[0]?.id ?? ''
+    if (settings.defaultShelfId) {
+      setSettingRaw(getDb(), 'defaultShelfId', settings.defaultShelfId)
+    }
   }
-  settings.language = normalizeLanguage(settings.language)
-  if (!['added', 'name', 'recent', 'size'].includes(String(settings.fileSort))) {
-    settings.fileSort = 'added'
+  if (!settings.lastShelfId || !shelfIds.has(settings.lastShelfId)) {
+    settings.lastShelfId = settings.defaultShelfId
+    if (settings.lastShelfId) {
+      setSettingRaw(getDb(), 'lastShelfId', settings.lastShelfId)
+    }
   }
-  settings.notifications = settings.notifications !== false
-  settings.startWithWindows = settings.startWithWindows === true
-  const idle = Number(settings.idleOpacity)
-  settings.idleOpacity = Number.isFinite(idle)
-    ? Math.min(0.7, Math.max(0.1, idle))
-    : DEFAULT_SETTINGS.idleOpacity
-  const timeout = Number(settings.idleTimeoutSec)
-  settings.idleTimeoutSec = Number.isFinite(timeout)
-    ? Math.min(60, Math.max(5, Math.round(timeout)))
-    : DEFAULT_SETTINGS.idleTimeoutSec
-  return settings
+  return normalizeSettings(settings)
 }
 
 export function setSettings(partial: Partial<AppSettings>): AppSettings {
   const current = getSettings()
-  const next = { ...current, ...partial }
+  const next = normalizeSettings({ ...current, ...partial })
+  const toWrite: Partial<AppSettings> = { ...partial }
   if (partial.language !== undefined) {
-    next.language = normalizeLanguage(partial.language)
-    partial = { ...partial, language: next.language }
+    toWrite.language = next.language
   }
   if (partial.idleOpacity !== undefined) {
-    const idle = Number(partial.idleOpacity)
-    next.idleOpacity = Number.isFinite(idle)
-      ? Math.min(0.7, Math.max(0.1, idle))
-      : current.idleOpacity
-    partial = { ...partial, idleOpacity: next.idleOpacity }
+    toWrite.idleOpacity = next.idleOpacity
   }
   if (partial.idleTimeoutSec !== undefined) {
-    const timeout = Number(partial.idleTimeoutSec)
-    next.idleTimeoutSec = Number.isFinite(timeout)
-      ? Math.min(60, Math.max(5, Math.round(timeout)))
-      : current.idleTimeoutSec
-    partial = { ...partial, idleTimeoutSec: next.idleTimeoutSec }
+    toWrite.idleTimeoutSec = next.idleTimeoutSec
   }
-  for (const [key, value] of Object.entries(partial)) {
-    setSettingRaw(getDb(), key, value)
+  for (const [key, value] of Object.entries(toWrite)) {
+    if (value !== undefined) {
+      setSettingRaw(getDb(), key, value)
+    }
   }
   return next
 }
