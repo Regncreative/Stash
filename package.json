@@ -1,9 +1,9 @@
 {
   "name": "stash",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A modern file shelf for Windows — collect, organize and drag files from the system tray",
   "main": "./out/main/index.js",
-  "author": "Stash",
+  "author": "Regncreative",
   "license": "MIT",
   "private": true,
   "repository": {
@@ -79,13 +79,15 @@
         "nsis"
       ],
       "icon": "resources/icon.png",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "publisherName": "Regncreative"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": false,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "Stash"
     }
   }
 }

@@ -1,14 +1,14 @@
 import type { CSSProperties, DragEvent, MouseEvent } from 'react'
 import { memo, useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Pin } from 'lucide-react'
+import { AlertTriangle, Pin, Trash2 } from 'lucide-react'
 import type { StashFile } from '@shared/types'
 import { FileTypeIcon } from './file-icon'
 import { formatBytes, formatClock } from '@/lib/format'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
 import { IMAGE_EXTS } from '@shared/types'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 /** Process-wide cache so icons persist across virtualized mount/unmount. */
 const iconMemo = new Map<string, string | null>()
@@ -20,8 +20,11 @@ interface FileCardProps {
 }
 
 export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileCardProps) {
+  const t = useT()
   const openContextMenu = useStashStore((s) => s.openContextMenu)
   const refresh = useStashStore((s) => s.refresh)
+  const showToast = useStashStore((s) => s.showToast)
+  const askConfirm = useStashStore((s) => s.askConfirm)
   const [preview, setPreview] = useState(false)
   const [icon, setIcon] = useState<string | null>(() => iconMemo.get(file.id) ?? null)
 
@@ -69,6 +72,20 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
     await refresh()
   }
 
+  const removeFile = async (e: MouseEvent) => {
+    e.stopPropagation()
+    const ok = await askConfirm({
+      title: t.removeFromShelf,
+      message: t.removeFileConfirm(file.name),
+      confirmLabel: t.remove,
+      danger: true
+    })
+    if (!ok) return
+    await window.stash.removeFile(file.id)
+    await refresh()
+    showToast(t.removedKept)
+  }
+
   const showImagePreview =
     preview && file.exists && !file.isDirectory && IMAGE_EXTS.has(file.extension)
 
@@ -76,21 +93,30 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 32, delay: Math.min(index, 8) * 0.03 }}
+      transition={{
+        type: 'spring',
+        stiffness: 420,
+        damping: 32,
+        delay: Math.min(index, 8) * 0.03
+      }}
       style={style}
       className="mx-5 h-[72px]"
     >
       <div
         className={cn(
-          'stash-drag-source group relative flex h-full cursor-grab items-center gap-3.5 rounded-[14px] px-3.5',
+          'stash-drag-source group relative flex h-full items-center gap-3.5 rounded-[14px] px-3.5',
           'bg-[var(--card)]',
-          'transition-all duration-150 ease-out active:cursor-grabbing',
-          'hover:bg-[var(--card-hover)] hover:shadow-[var(--hover-shadow)]',
-          !file.exists && 'opacity-55'
+          'transition-all duration-150 ease-out',
+          file.exists
+            ? 'cursor-grab active:cursor-grabbing hover:bg-[var(--card-hover)] hover:shadow-[var(--hover-shadow)]'
+            : 'cursor-not-allowed opacity-60'
         )}
         draggable={file.exists}
         onDragStart={onDragStart}
-        onDoubleClick={() => void window.stash.openFile(file.id)}
+        onDoubleClick={() => {
+          if (!file.exists) return
+          void window.stash.openFile(file.id)
+        }}
         onContextMenu={(e) => {
           e.preventDefault()
           openContextMenu(e.clientX, e.clientY, file.id)
@@ -98,9 +124,9 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
         onMouseEnter={() => setPreview(true)}
         onMouseLeave={() => setPreview(false)}
         role="listitem"
-        aria-label={file.name}
+        aria-label={file.exists ? file.name : `${file.name} (${t.fileNotFound})`}
       >
-        <div className="relative shrink-0">
+        <div className={cn('relative shrink-0', !file.exists && 'grayscale')}>
           {icon ? (
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-black/5 dark:bg-white/5">
               <img src={icon} alt="" className="h-7 w-7 object-contain" draggable={false} />
@@ -114,36 +140,49 @@ export const FileCard = memo(function FileCard({ file, style, index = 0 }: FileC
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="truncate-path text-[15px] font-medium leading-tight text-[var(--foreground)]">
+          <div
+            className={cn(
+              'truncate-path text-[15px] font-medium leading-tight text-[var(--foreground)]',
+              !file.exists && 'text-[var(--muted-foreground)] line-through decoration-[var(--muted-foreground)]/70'
+            )}
+          >
             {file.name}
           </div>
           <div className="mt-1.5 text-[13px] leading-none text-[var(--muted-foreground)]">
             {!file.exists ? (
-              <span className="text-amber-500">{tr.fileNotFound}</span>
+              <span className="text-amber-500">{t.fileNotFound}</span>
             ) : file.isDirectory ? (
-              tr.folder
+              t.folder
             ) : (
               formatBytes(file.size)
             )}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="text-[13px] tabular-nums leading-none text-[var(--muted-foreground)]">
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="mr-1.5 text-[13px] tabular-nums leading-none text-[var(--muted-foreground)]">
             {formatClock(file.addedAt)}
           </span>
           <button
             type="button"
             onClick={togglePin}
             className={cn(
-              'rounded-md p-1 transition-colors duration-150',
+              'rounded-md p-1.5 transition-colors duration-150',
               file.isPinned
                 ? 'text-[var(--accent)]'
                 : 'text-[var(--muted-foreground)] opacity-40 group-hover:opacity-100'
             )}
-            aria-label={file.isPinned ? tr.unpin : tr.pin}
+            aria-label={file.isPinned ? t.unpin : t.pin}
           >
             <Pin size={16} strokeWidth={1.75} fill={file.isPinned ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            type="button"
+            onClick={removeFile}
+            className="rounded-md p-1.5 text-[var(--muted-foreground)] opacity-40 transition-colors duration-150 hover:text-[var(--destructive)] group-hover:opacity-100"
+            aria-label={t.removeFromShelf}
+          >
+            <Trash2 size={16} strokeWidth={1.75} />
           </button>
         </div>
 

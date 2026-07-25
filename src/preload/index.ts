@@ -17,12 +17,14 @@ export interface StashApi {
   hideWindow: () => Promise<void>
   setPinned: (pinned: boolean) => Promise<boolean>
   isPinned: () => Promise<boolean>
+  setOpacity: (opacity: number, animate?: boolean) => Promise<boolean>
 
   // Files
   listFiles: (shelfId?: string | null) => Promise<StashFile[]>
   searchFiles: (query: string, shelfId?: string | null) => Promise<StashFile[]>
   addFiles: (paths: string[], shelfId?: string) => Promise<AddFilesResult>
   removeFile: (id: string) => Promise<boolean>
+  clearMissingFiles: () => Promise<number>
   pinFile: (id: string, pinned: boolean) => Promise<boolean>
   moveFile: (id: string, shelfId: string) => Promise<boolean>
   openFile: (id: string) => Promise<{ ok: boolean; error?: string }>
@@ -67,11 +69,14 @@ const api: StashApi = {
   hideWindow: () => ipcRenderer.invoke(IpcChannels.WINDOW_HIDE),
   setPinned: (pinned) => ipcRenderer.invoke(IpcChannels.WINDOW_PIN, pinned),
   isPinned: () => ipcRenderer.invoke(IpcChannels.WINDOW_IS_PINNED),
+  setOpacity: (opacity, animate) =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_SET_OPACITY, opacity, animate !== false),
 
   listFiles: (shelfId) => ipcRenderer.invoke(IpcChannels.FILES_LIST, shelfId),
   searchFiles: (query, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_SEARCH, query, shelfId),
   addFiles: (paths, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_ADD, paths, shelfId),
   removeFile: (id) => ipcRenderer.invoke(IpcChannels.FILES_REMOVE, id),
+  clearMissingFiles: () => ipcRenderer.invoke(IpcChannels.FILES_CLEAR_MISSING),
   pinFile: (id, pinned) => ipcRenderer.invoke(IpcChannels.FILES_PIN, id, pinned),
   moveFile: (id, shelfId) => ipcRenderer.invoke(IpcChannels.FILES_MOVE, id, shelfId),
   openFile: (id) => ipcRenderer.invoke(IpcChannels.FILES_OPEN, id),

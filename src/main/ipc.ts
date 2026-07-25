@@ -4,10 +4,11 @@ import { basename, extname, join } from 'path'
 import koffi from 'koffi'
 import { IpcChannels } from '../shared/ipc'
 import * as db from './database'
-import { getPanelWindow } from './window'
+import { getPanelWindow, beginExternalDialog } from './window'
 import { syncAutoLaunch } from './auto-launch'
 import { reregisterHotkey } from './hotkey'
 import { checkForUpdates, getUpdateStatus, installUpdateNow } from './updater'
+import { rebuildTrayMenu } from './tray'
 import type { FileInput } from './database'
 import type { AppSettings } from '../shared/types'
 
@@ -90,6 +91,7 @@ const iconCache = new Map<string, string | null>()
  */
 function openNativeProperties(filePath: string): boolean {
   const panel = getPanelWindow()
+  beginExternalDialog()
   if (panel && !panel.isDestroyed()) {
     panel.setAlwaysOnTop(false)
   }
@@ -203,6 +205,18 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IpcChannels.FILES_REMOVE, (_e, id: string) => {
     db.removeFile(id)
     return true
+  })
+
+  ipcMain.handle(IpcChannels.FILES_CLEAR_MISSING, () => {
+    const all = db.listFiles(null)
+    let removed = 0
+    for (const file of all) {
+      if (!existsSync(file.absolutePath)) {
+        db.removeFile(file.id)
+        removed++
+      }
+    }
+    return removed
   })
 
   ipcMain.handle(IpcChannels.FILES_PIN, (_e, id: string, pinned: boolean) => {
@@ -350,9 +364,8 @@ export function registerIpcHandlers(): void {
     if (partial.openHotkey !== undefined) {
       reregisterHotkey(next.openHotkey)
     }
-    if (partial.alwaysOnTop !== undefined) {
-      const win = getPanelWindow()
-      win?.setAlwaysOnTop(partial.alwaysOnTop)
+    if (partial.language !== undefined) {
+      rebuildTrayMenu()
     }
     return next
   })

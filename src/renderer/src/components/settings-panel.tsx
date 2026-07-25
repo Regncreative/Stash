@@ -2,79 +2,165 @@ import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
-import type { ThemeMode } from '@shared/types'
-import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import type { FileSort, ThemeMode } from '@shared/types'
 import type { UpdateStatus } from '@shared/types'
+import type { AppLanguage } from '@shared/types'
+import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
+import { HotkeyRecorder } from './hotkey-recorder'
+import { FlagEn, FlagTr } from './language-flags'
 
 const ACCENTS = ['#2563EB', '#0078D4', '#8764B8', '#038387', '#00B294', '#CA5010', '#E74856', '#C239B3']
 
-const THEME_LABELS: Record<ThemeMode, string> = {
-  system: tr.themeSystem,
-  light: tr.themeLight,
-  dark: tr.themeDark
-}
+const LANG_FLAGS = {
+  tr: FlagTr,
+  en: FlagEn
+} as const
 
 export function SettingsPanel() {
+  const t = useT()
   const settings = useStashStore((s) => s.settings)
   const updateSettings = useStashStore((s) => s.updateSettings)
   const setShowSettings = useStashStore((s) => s.setShowSettings)
   const shelves = useStashStore((s) => s.shelves)
   const refresh = useStashStore((s) => s.refresh)
   const showToast = useStashStore((s) => s.showToast)
+  const askConfirm = useStashStore((s) => s.askConfirm)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const [clearing, setClearing] = useState(false)
 
   useEffect(() => {
     void window.stash.getUpdateStatus().then(setUpdateStatus)
-    const unsub = window.stash.onUpdateStatus(setUpdateStatus)
-    return unsub
+    return window.stash.onUpdateStatus(setUpdateStatus)
   }, [])
+
+  // Refresh so missing-file flags are current before clear/list actions.
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
 
   if (!settings) return null
 
+  const themeLabels: Record<ThemeMode, string> = {
+    system: t.themeSystem,
+    light: t.themeLight,
+    dark: t.themeDark
+  }
+
+  const languages: { id: AppLanguage; label: string }[] = [
+    { id: 'tr', label: t.languageTr },
+    { id: 'en', label: t.languageEn }
+  ]
+
+  const sortOptions: { id: FileSort; label: string }[] = [
+    { id: 'added', label: t.sortAdded },
+    { id: 'name', label: t.sortName },
+    { id: 'recent', label: t.sortRecent },
+    { id: 'size', label: t.sortSize }
+  ]
+
+  const idlePercent = Math.round(settings.idleOpacity * 100)
+
+  const clearMissing = async () => {
+    if (clearing) return
+    setClearing(true)
+    try {
+      await refresh()
+      const missing = useStashStore.getState().files.filter((f) => !f.exists)
+      if (missing.length === 0) {
+        // Re-check on main in case the renderer list was stale.
+        const removed = await window.stash.clearMissingFiles()
+        await refresh()
+        showToast(removed === 0 ? t.clearMissingNone : t.clearMissingDone(removed))
+        return
+      }
+      const ok = await askConfirm({
+        title: t.clearMissing,
+        message: t.clearMissingConfirm(missing.length),
+        confirmLabel: t.remove,
+        danger: true
+      })
+      if (!ok) return
+      const removed = await window.stash.clearMissingFiles()
+      await refresh()
+      showToast(removed === 0 ? t.clearMissingNone : t.clearMissingDone(removed))
+    } finally {
+      setClearing(false)
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center gap-2 px-6 pb-3 pt-1">
+      <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-1">
         <button
           type="button"
           className="icon-btn"
-          aria-label={tr.back}
+          aria-label={t.back}
           onClick={() => setShowSettings(false)}
         >
           <ArrowLeft size={18} strokeWidth={1.75} />
         </button>
-        <h2 className="text-[16px] font-semibold text-[var(--foreground)]">{tr.settings}</h2>
+        <div>
+          <h2 className="text-[16px] font-semibold leading-tight text-[var(--foreground)]">
+            {t.settings}
+          </h2>
+          <p className="text-[11px] text-[var(--muted-foreground)]">{t.settingsSubtitle}</p>
+        </div>
       </div>
 
-      <div className="scroll-autohide min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-6 pb-6">
-        <SettingsCard title={tr.appearance}>
-          <Field label={tr.theme}>
-            <div className="flex gap-1.5">
-              {(['system', 'light', 'dark'] as ThemeMode[]).map((t) => (
+      <div className="scroll-autohide min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto px-5 pb-5">
+        <SettingsCard title={t.appearance}>
+          <Field label={t.language}>
+            <div className="grid grid-cols-2 gap-1.5">
+              {languages.map((lang) => {
+                const Flag = LANG_FLAGS[lang.id]
+                return (
+                  <button
+                    key={lang.id}
+                    type="button"
+                    onClick={() => void updateSettings({ language: lang.id })}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-150',
+                      settings.language === lang.id
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'bg-[var(--pill)] text-[var(--muted-foreground)] hover:bg-[var(--pill-hover)] hover:text-[var(--foreground)]'
+                    )}
+                  >
+                    <Flag className="shrink-0 rounded-[2px] shadow-sm" />
+                    {lang.label}
+                  </button>
+                )
+              })}
+            </div>
+          </Field>
+
+          <Field label={t.theme}>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(['system', 'light', 'dark'] as ThemeMode[]).map((mode) => (
                 <button
-                  key={t}
+                  key={mode}
                   type="button"
-                  onClick={() => void updateSettings({ theme: t })}
+                  onClick={() => void updateSettings({ theme: mode })}
                   className={cn(
-                    'flex-1 rounded-full py-2 text-[12px] font-medium transition-colors duration-150',
-                    settings.theme === t
+                    'rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-150',
+                    settings.theme === mode
                       ? 'bg-[var(--accent)] text-white'
                       : 'bg-[var(--pill)] text-[var(--muted-foreground)] hover:bg-[var(--pill-hover)] hover:text-[var(--foreground)]'
                   )}
                 >
-                  {THEME_LABELS[t]}
+                  {themeLabels[mode]}
                 </button>
               ))}
             </div>
           </Field>
 
-          <Field label={tr.accentColor}>
-            <div className="flex flex-wrap gap-2.5">
+          <Field label={t.accentColor}>
+            <div className="flex flex-wrap gap-2">
               {ACCENTS.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  aria-label={`${tr.accentColor} ${c}`}
+                  aria-label={`${t.accentColor} ${c}`}
                   onClick={() => void updateSettings({ accentColor: c })}
                   className={cn(
                     'h-7 w-7 rounded-full transition-transform duration-150 hover:scale-110',
@@ -86,34 +172,102 @@ export function SettingsPanel() {
               ))}
             </div>
           </Field>
-
-          <ToggleRow
-            label={tr.animations}
-            checked={settings.animations}
-            onChange={(v) => void updateSettings({ animations: v })}
-          />
         </SettingsCard>
 
-        <SettingsCard title={tr.behavior}>
+        <SettingsCard title={t.behavior}>
           <ToggleRow
-            label={tr.startWithWindows}
+            label={t.startWithWindows}
+            hint={t.startWithWindowsHint}
             checked={settings.startWithWindows}
             onChange={(v) => void updateSettings({ startWithWindows: v })}
           />
           <ToggleRow
-            label={tr.notifications}
+            label={t.notifications}
+            hint={t.notificationsHint}
             checked={settings.notifications}
             onChange={(v) => void updateSettings({ notifications: v })}
           />
-          <ToggleRow
-            label={tr.alwaysOnTop}
-            checked={settings.alwaysOnTop}
-            onChange={(v) => void updateSettings({ alwaysOnTop: v })}
-          />
 
-          <Field label={tr.defaultShelf}>
+          <Field label={`${t.idleOpacity} · %${idlePercent}`}>
+            <input
+              type="range"
+              min={10}
+              max={70}
+              step={5}
+              value={idlePercent}
+              onChange={(e) => {
+                const pct = Number(e.target.value)
+                void updateSettings({ idleOpacity: pct / 100 })
+              }}
+              onPointerUp={(e) => {
+                const pct = Number((e.target as HTMLInputElement).value)
+                const opacity = pct / 100
+                void window.stash.setOpacity(opacity)
+                window.setTimeout(() => void window.stash.setOpacity(1), 700)
+              }}
+              className="stash-range"
+              aria-valuemin={10}
+              aria-valuemax={70}
+              aria-valuenow={idlePercent}
+              aria-label={t.idleOpacity}
+            />
+            <p className="mt-1.5 text-[11px] leading-snug text-[var(--muted-foreground)]">
+              {t.idleOpacityHint}
+            </p>
+            <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[var(--muted-foreground)]">
+              <span>10%</span>
+              <span>70%</span>
+            </div>
+          </Field>
+
+          <Field label={`${t.idleTimeout} · ${settings.idleTimeoutSec}s`}>
+            <input
+              type="range"
+              min={5}
+              max={60}
+              step={5}
+              value={settings.idleTimeoutSec}
+              onChange={(e) => {
+                void updateSettings({ idleTimeoutSec: Number(e.target.value) })
+              }}
+              className="stash-range"
+              aria-valuemin={5}
+              aria-valuemax={60}
+              aria-valuenow={settings.idleTimeoutSec}
+              aria-label={t.idleTimeout}
+            />
+            <p className="mt-1.5 text-[11px] leading-snug text-[var(--muted-foreground)]">
+              {t.idleTimeoutHint}
+            </p>
+            <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[var(--muted-foreground)]">
+              <span>5s</span>
+              <span>60s</span>
+            </div>
+          </Field>
+
+          <Field label={t.fileSort}>
+            <div className="grid grid-cols-2 gap-1.5">
+              {sortOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => void updateSettings({ fileSort: opt.id })}
+                  className={cn(
+                    'rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-150',
+                    settings.fileSort === opt.id
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--pill)] text-[var(--muted-foreground)] hover:bg-[var(--pill-hover)] hover:text-[var(--foreground)]'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label={t.defaultShelf}>
             <select
-              className="h-9 w-full rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-3 text-[13px] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+              className="h-10 w-full rounded-[12px] border border-[var(--border)] bg-[var(--bg)] px-3 text-[13px] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
               value={settings.defaultShelfId}
               onChange={(e) => void updateSettings({ defaultShelfId: e.target.value })}
             >
@@ -125,23 +279,34 @@ export function SettingsPanel() {
             </select>
           </Field>
 
-          <Field label={tr.openHotkey}>
-            <input
-              className="h-9 w-full rounded-[10px] border border-[var(--border)] bg-[var(--bg)] px-3 text-[13px] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+          <Field label={t.openHotkey}>
+            <HotkeyRecorder
               value={settings.openHotkey}
-              onChange={(e) => void updateSettings({ openHotkey: e.target.value })}
-              placeholder="Control+Shift+Space"
+              onChange={(accel) => void updateSettings({ openHotkey: accel })}
             />
-            <p className="mt-1.5 text-[11px] text-[var(--muted-foreground)]">{tr.hotkeyHint}</p>
           </Field>
+
+          <div>
+            <button
+              type="button"
+              disabled={clearing}
+              className="h-10 w-full rounded-[12px] bg-[var(--pill)] text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill-hover)] disabled:opacity-50"
+              onClick={() => void clearMissing()}
+            >
+              {t.clearMissing}
+            </button>
+            <p className="mt-1.5 text-[11px] leading-snug text-[var(--muted-foreground)]">
+              {t.clearMissingHint}
+            </p>
+          </div>
         </SettingsCard>
 
-        <SettingsCard title={tr.shelvesSection}>
-          <ul className="space-y-1">
+        <SettingsCard title={t.shelvesSection}>
+          <ul className="space-y-0.5">
             {shelves.map((shelf) => (
               <li
                 key={shelf.id}
-                className="flex items-center justify-between gap-2 rounded-[10px] px-2.5 py-2 hover:bg-[var(--pill)]"
+                className="flex items-center justify-between gap-2 rounded-[12px] px-2.5 py-2 hover:bg-[var(--pill)]"
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span
@@ -153,15 +318,21 @@ export function SettingsPanel() {
                 <button
                   type="button"
                   className="icon-btn shrink-0 text-[var(--destructive)] disabled:opacity-30"
-                  aria-label={tr.deleteShelf(shelf.name)}
+                  aria-label={t.deleteShelf(shelf.name)}
                   disabled={shelves.length <= 1}
                   onClick={async () => {
-                    if (!confirm(tr.deleteShelfConfirm(shelf.name))) return
+                    const ok = await askConfirm({
+                      title: t.deleteShelf(shelf.name),
+                      message: t.deleteShelfConfirm(shelf.name),
+                      confirmLabel: t.delete,
+                      danger: true
+                    })
+                    if (!ok) return
                     try {
                       await window.stash.deleteShelf(shelf.id)
                       await refresh()
                     } catch {
-                      showToast(tr.cannotDeleteLast)
+                      showToast(t.cannotDeleteLast)
                     }
                   }}
                 >
@@ -172,34 +343,34 @@ export function SettingsPanel() {
           </ul>
         </SettingsCard>
 
-        <SettingsCard title={tr.checkUpdates}>
+        <SettingsCard title={t.updatesSection}>
           <button
             type="button"
-            className="w-full rounded-[10px] bg-[var(--pill)] px-3 py-2.5 text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill-hover)]"
+            className="h-10 w-full rounded-[12px] bg-[var(--pill)] text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill-hover)]"
             onClick={() => void window.stash.checkForUpdates()}
           >
-            {updateStatus.state === 'checking' ? tr.updateChecking : tr.checkUpdates}
+            {updateStatus.state === 'checking' ? t.updateChecking : t.checkUpdates}
           </button>
           {updateStatus.state === 'downloaded' && (
             <button
               type="button"
-              className="w-full rounded-[10px] bg-[var(--accent)] px-3 py-2.5 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+              className="h-10 w-full rounded-[12px] bg-[var(--accent)] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
               onClick={() => void window.stash.installUpdate()}
             >
-              {tr.installAndRestart}
+              {t.installAndRestart}
             </button>
           )}
           {updateStatus.state === 'downloading' && (
             <p className="text-center text-[12px] text-[var(--muted-foreground)]">
-              {tr.updateDownloading(updateStatus.percent)}
+              {t.updateDownloading(updateStatus.percent)}
             </p>
           )}
           {updateStatus.state === 'error' && (
-            <p className="text-center text-[12px] text-[var(--destructive)]">{tr.updateError}</p>
+            <p className="text-center text-[12px] text-[var(--destructive)]">{t.updateError}</p>
           )}
         </SettingsCard>
 
-        <p className="pt-1 text-center text-[11px] text-[var(--muted-foreground)]">{tr.footer}</p>
+        <p className="pt-1 text-center text-[11px] text-[var(--muted-foreground)]">{t.footer}</p>
       </div>
     </div>
   )
@@ -207,8 +378,8 @@ export function SettingsPanel() {
 
 function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-[14px] bg-[var(--card)] px-3.5 py-3.5">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+    <section className="rounded-[16px] border border-[var(--border)] bg-[var(--card)] px-3.5 py-3.5">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--muted-foreground)]">
         {title}
       </h3>
       <div className="space-y-3.5">{children}</div>
@@ -227,16 +398,23 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function ToggleRow({
   label,
+  hint,
   checked,
   onChange
 }: {
   label: string
+  hint?: string
   checked: boolean
   onChange: (v: boolean) => void
 }) {
   return (
     <div className="flex w-full items-center justify-between gap-3">
-      <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--foreground)]">{label}</span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] text-[var(--foreground)]">{label}</div>
+        {hint && (
+          <div className="mt-0.5 text-[11px] leading-snug text-[var(--muted-foreground)]">{hint}</div>
+        )}
+      </div>
       <button
         type="button"
         role="switch"

@@ -5,24 +5,26 @@ import { FileCard } from './file-card'
 import { DropFooter } from './drop-footer'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 /** Card ~72px + 8px gap */
 const ITEM_HEIGHT = 80
 const OVERSCAN = 5
 
 export function FileList() {
+  const t = useT()
   const getVisibleFiles = useStashStore((s) => s.getVisibleFiles)
   const files = useStashStore((s) => s.files)
   const searchQuery = useStashStore((s) => s.searchQuery)
   const filter = useStashStore((s) => s.filter)
   const activeShelfId = useStashStore((s) => s.activeShelfId)
   const dropActive = useStashStore((s) => s.dropActive)
+  const fileSort = useStashStore((s) => s.settings?.fileSort)
 
   const visible = useMemo(
     () => getVisibleFiles(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [files, searchQuery, filter, activeShelfId, getVisibleFiles]
+    [files, searchQuery, filter, activeShelfId, fileSort, getVisibleFiles]
   )
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -87,10 +89,10 @@ export function FileList() {
               />
             </div>
             <p className="text-[15px] font-semibold text-[var(--foreground)]">
-              {searchQuery || filter !== 'all' ? tr.noMatch : tr.emptyTitle}
+              {searchQuery || filter !== 'all' ? t.noMatch : t.emptyTitle}
             </p>
             <p className="mt-2 max-w-[220px] text-[13px] leading-snug text-[var(--muted-foreground)]">
-              {searchQuery || filter !== 'all' ? tr.trySearch : tr.emptyHint}
+              {searchQuery || filter !== 'all' ? t.trySearch : t.emptyHint}
             </p>
           </motion.div>
         </div>

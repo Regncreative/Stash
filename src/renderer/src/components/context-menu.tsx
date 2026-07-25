@@ -11,15 +11,17 @@ import {
 } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 export function ContextMenu() {
+  const t = useT()
   const contextMenu = useStashStore((s) => s.contextMenu)
   const closeContextMenu = useStashStore((s) => s.closeContextMenu)
   const shelves = useStashStore((s) => s.shelves)
   const files = useStashStore((s) => s.files)
   const refresh = useStashStore((s) => s.refresh)
   const showToast = useStashStore((s) => s.showToast)
+  const askConfirm = useStashStore((s) => s.askConfirm)
   const ref = useRef<HTMLDivElement>(null)
 
   const file = files.find((f) => f.id === contextMenu?.fileId)
@@ -56,33 +58,33 @@ export function ContextMenu() {
     action: () => Promise<void>
   }[] = [
     {
-      label: tr.open,
+      label: t.open,
       icon: ExternalLink,
       action: async () => {
         const res = await window.stash.openFile(file.id)
         if (!res.ok) {
-          showToast(res.error === 'missing' ? tr.fileNotFound : tr.couldNotOpen)
+          showToast(res.error === 'missing' ? t.fileNotFound : t.couldNotOpen)
         }
       }
     },
     {
-      label: tr.reveal,
+      label: t.reveal,
       icon: FolderOpen,
       action: async () => {
         const res = await window.stash.revealFile(file.id)
-        if (!res.ok) showToast(tr.fileNotFound)
+        if (!res.ok) showToast(t.fileNotFound)
       }
     },
     {
-      label: tr.copyPath,
+      label: t.copyPath,
       icon: Copy,
       action: async () => {
         await window.stash.copyPath(file.id)
-        showToast(tr.pathCopied)
+        showToast(t.pathCopied)
       }
     },
     {
-      label: file.isPinned ? tr.unpin : tr.pin,
+      label: file.isPinned ? t.unpin : t.pin,
       icon: file.isPinned ? PinOff : Pin,
       action: async () => {
         await window.stash.pinFile(file.id, !file.isPinned)
@@ -90,21 +92,28 @@ export function ContextMenu() {
       }
     },
     {
-      label: tr.properties,
+      label: t.properties,
       icon: Info,
       action: async () => {
         const res = await window.stash.getProperties(file.id)
-        if (!res.ok) showToast(tr.missingOnDisk)
+        if (!res.ok) showToast(t.missingOnDisk)
       }
     },
     {
-      label: tr.removeFromShelf,
+      label: t.removeFromShelf,
       icon: Trash2,
       danger: true,
       action: async () => {
+        const ok = await askConfirm({
+          title: t.removeFromShelf,
+          message: t.removeFileConfirm(file.name),
+          confirmLabel: t.remove,
+          danger: true
+        })
+        if (!ok) return
         await window.stash.removeFile(file.id)
         await refresh()
-        showToast(tr.removedKept)
+        showToast(t.removedKept)
       }
     }
   ]
@@ -143,7 +152,7 @@ export function ContextMenu() {
           <>
             <div className="my-1 border-t border-[var(--border)]" />
             <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-              {tr.moveToShelf}
+              {t.moveToShelf}
             </div>
             {shelves
               .filter((s) => s.id !== file.shelfId)
@@ -156,7 +165,7 @@ export function ContextMenu() {
                     void run(async () => {
                       await window.stash.moveFile(file.id, shelf.id)
                       await refresh()
-                      showToast(tr.movedTo(shelf.name))
+                      showToast(t.movedTo(shelf.name))
                     })
                   }
                   className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] hover:bg-[var(--pill)]"

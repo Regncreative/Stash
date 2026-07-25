@@ -1,9 +1,10 @@
 import { Upload } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 export function DropFooter() {
+  const t = useT()
   const dropActive = useStashStore((s) => s.dropActive)
 
   return (
@@ -18,7 +19,7 @@ export function DropFooter() {
       >
         <Upload size={18} strokeWidth={1.75} className="shrink-0" />
         <p className="text-[13px] font-medium leading-none">
-          {dropActive ? tr.releaseToStash : tr.dropHere}
+          {dropActive ? t.releaseToStash : t.dropHere}
         </p>
       </div>
     </div>

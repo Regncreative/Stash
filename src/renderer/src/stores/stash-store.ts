@@ -8,6 +8,21 @@ import type {
 } from '@shared/types'
 import { matchesFilter } from '@shared/types'
 
+export interface ConfirmRequest {
+  title: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+  /** If set, shows a text field (prompt mode). */
+  promptDefault?: string
+  promptPlaceholder?: string
+}
+
+interface PendingConfirm extends ConfirmRequest {
+  resolve: (value: string | boolean | null) => void
+}
+
 interface StashState {
   ready: boolean
   shelves: Shelf[]
@@ -27,6 +42,7 @@ interface StashState {
     fileId: string
   } | null
   dropActive: boolean
+  confirm: PendingConfirm | null
 
   init: () => Promise<void>
   refresh: () => Promise<void>
@@ -43,6 +59,9 @@ interface StashState {
   setDropActive: (v: boolean) => void
   updateSettings: (partial: Partial<AppSettings>) => Promise<void>
   getVisibleFiles: () => StashFile[]
+  askConfirm: (req: ConfirmRequest) => Promise<boolean>
+  askPrompt: (req: ConfirmRequest) => Promise<string | null>
+  resolveConfirm: (value: string | boolean | null) => void
 }
 
 export const useStashStore = create<StashState>((set, get) => ({
@@ -60,6 +79,7 @@ export const useStashStore = create<StashState>((set, get) => ({
   toast: null,
   contextMenu: null,
   dropActive: false,
+  confirm: null,
 
   init: async () => {
     const [shelves, settings, systemTheme, pinned] = await Promise.all([
@@ -75,6 +95,7 @@ export const useStashStore = create<StashState>((set, get) => ({
     document.documentElement.style.setProperty('--accent', settings.accentColor)
     document.documentElement.classList.toggle('light', theme === 'light')
     document.documentElement.classList.toggle('dark', theme === 'dark')
+    document.documentElement.lang = settings.language
 
     const activeShelfId = settings.defaultShelfId || shelves[0]?.id || null
     const [files, stats] = await Promise.all([
@@ -101,6 +122,7 @@ export const useStashStore = create<StashState>((set, get) => ({
       window.stash.getStats(),
       window.stash.getSettings()
     ])
+    document.documentElement.lang = settings.language
     set({ shelves, files, stats, settings })
   },
 
@@ -128,21 +150,60 @@ export const useStashStore = create<StashState>((set, get) => ({
   setDropActive: (v) => set({ dropActive: v }),
 
   updateSettings: async (partial) => {
-    const next = await window.stash.setSettings(partial)
-    set({ settings: next })
-    if (partial.accentColor) {
-      document.documentElement.style.setProperty('--accent', partial.accentColor)
+    const prev = get().settings
+    // Optimistic update so toggles/sort apply immediately (even before IPC).
+    if (prev) {
+      set({ settings: { ...prev, ...partial } })
     }
-    if (partial.theme) {
-      const systemTheme = await window.stash.getSystemTheme()
-      const theme =
-        partial.theme === 'system' ? systemTheme : (partial.theme as 'light' | 'dark')
-      get().setTheme(theme)
+    try {
+      const next = await window.stash.setSettings(partial)
+      set({ settings: next })
+      if (partial.language) {
+        document.documentElement.lang = next.language
+      }
+      if (partial.accentColor) {
+        document.documentElement.style.setProperty('--accent', partial.accentColor)
+      }
+      if (partial.theme) {
+        const systemTheme = await window.stash.getSystemTheme()
+        const theme =
+          partial.theme === 'system' ? systemTheme : (partial.theme as 'light' | 'dark')
+        get().setTheme(theme)
+      }
+    } catch {
+      if (prev) set({ settings: prev })
     }
   },
 
+  askConfirm: (req) =>
+    new Promise<boolean>((resolve) => {
+      set({
+        confirm: {
+          ...req,
+          resolve: (v) => resolve(v === true)
+        }
+      })
+    }),
+
+  askPrompt: (req) =>
+    new Promise<string | null>((resolve) => {
+      set({
+        confirm: {
+          ...req,
+          promptDefault: req.promptDefault ?? '',
+          resolve: (v) => resolve(typeof v === 'string' ? v : null)
+        }
+      })
+    }),
+
+  resolveConfirm: (value) => {
+    const pending = get().confirm
+    set({ confirm: null })
+    pending?.resolve(value)
+  },
+
   getVisibleFiles: () => {
-    const { files, activeShelfId, searchQuery, filter } = get()
+    const { files, activeShelfId, searchQuery, filter, settings } = get()
     let result = files
 
     if (activeShelfId) {
@@ -163,6 +224,22 @@ export const useStashStore = create<StashState>((set, get) => ({
     if (filter !== 'all') {
       result = result.filter((f) => matchesFilter(f, filter))
     }
+
+    const sort = settings?.fileSort ?? 'added'
+    result = [...result].sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+      switch (sort) {
+        case 'name':
+          return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        case 'recent':
+          return (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0) || b.addedAt - a.addedAt
+        case 'size':
+          return b.size - a.size
+        case 'added':
+        default:
+          return b.addedAt - a.addedAt
+      }
+    })
 
     return result
   }

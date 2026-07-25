@@ -1,6 +1,8 @@
 /** Shared domain types for Stash */
 
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type AppLanguage = 'tr' | 'en'
+export type FileSort = 'added' | 'name' | 'recent' | 'size'
 
 export type FileFilter =
   | 'all'
@@ -43,12 +45,19 @@ export interface AppSettings {
   theme: ThemeMode
   accentColor: string
   startWithWindows: boolean
-  language: string
-  animations: boolean
+  language: AppLanguage
   openHotkey: string
   defaultShelfId: string
-  alwaysOnTop: boolean
   notifications: boolean
+  /** How to order files within a shelf (pinned still first). */
+  fileSort: FileSort
+  /**
+   * Panel opacity after idle timeout without mouse hover.
+   * Clamped to 0.10–0.70 (shown as 10%–70% in settings).
+   */
+  idleOpacity: number
+  /** Seconds without mouse activity before fading (5–60). */
+  idleTimeoutSec: number
 }
 
 export interface ShelfStats {
@@ -91,11 +100,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   accentColor: '#2563EB',
   startWithWindows: true,
   language: 'tr',
-  animations: true,
   openHotkey: 'CommandOrControl+Shift+Space',
   defaultShelfId: '',
-  alwaysOnTop: false,
-  notifications: true
+  notifications: true,
+  fileSort: 'added',
+  idleOpacity: 0.4,
+  idleTimeoutSec: 10
 }
 
 export const IMAGE_EXTS = new Set([

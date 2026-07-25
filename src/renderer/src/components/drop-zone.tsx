@@ -2,13 +2,14 @@ import type { ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 interface DropZoneProps {
   children: ReactNode
 }
 
 export function DropZone({ children }: DropZoneProps) {
+  const t = useT()
   const setDropActive = useStashStore((s) => s.setDropActive)
   const dropActive = useStashStore((s) => s.dropActive)
   const activeShelfId = useStashStore((s) => s.activeShelfId)
@@ -67,9 +68,9 @@ export function DropZone({ children }: DropZoneProps) {
       const result = await window.stash.addFiles(paths, shelfId)
       await refresh()
       if (result.added > 0) {
-        showToast(tr.filesAdded(result.added, result.shelfName))
+        showToast(t.filesAdded(result.added, result.shelfName))
       } else if (result.skipped > 0) {
-        showToast(tr.alreadyOnShelf)
+        showToast(t.alreadyOnShelf)
       }
     }
 

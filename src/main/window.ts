@@ -14,9 +14,11 @@ const PANEL_HEIGHT = 650
 
 let panelWindow: BrowserWindow | null = null
 let isPinned = false
+let currentOpacity = 1
+let opacityAnim: ReturnType<typeof setInterval> | null = null
 
 export function setQuitting(_value: boolean): void {
-  // Kept for callers; panel no longer auto-hides on blur.
+  // Kept for callers.
 }
 
 export function getPanelWindow(): BrowserWindow | null {
@@ -25,6 +27,53 @@ export function getPanelWindow(): BrowserWindow | null {
 
 export function isPanelPinned(): boolean {
   return isPinned
+}
+
+/** Call before opening OS dialogs (e.g. Properties) so always-on-top can drop briefly. */
+export function beginExternalDialog(): void {
+  // no-op placeholder for dialog flow; opacity stays managed by renderer.
+}
+
+function stopOpacityAnim(): void {
+  if (opacityAnim) {
+    clearInterval(opacityAnim)
+    opacityAnim = null
+  }
+}
+
+/** Animate BrowserWindow opacity (ease-out). Pass animate=false for instant set. */
+export function setPanelOpacity(opacity: number, animate = true): void {
+  if (!panelWindow || panelWindow.isDestroyed()) return
+  const clamped = Math.min(1, Math.max(0.1, opacity))
+
+  stopOpacityAnim()
+
+  if (!animate || Math.abs(clamped - currentOpacity) < 0.01) {
+    currentOpacity = clamped
+    panelWindow.setOpacity(clamped)
+    return
+  }
+
+  const start = currentOpacity
+  const delta = clamped - start
+  const duration = 480
+  const startedAt = Date.now()
+
+  opacityAnim = setInterval(() => {
+    if (!panelWindow || panelWindow.isDestroyed()) {
+      stopOpacityAnim()
+      return
+    }
+    const t = Math.min(1, (Date.now() - startedAt) / duration)
+    const eased = 1 - (1 - t) ** 3
+    currentOpacity = start + delta * eased
+    panelWindow.setOpacity(currentOpacity)
+    if (t >= 1) {
+      currentOpacity = clamped
+      panelWindow.setOpacity(clamped)
+      stopOpacityAnim()
+    }
+  }, 16)
 }
 
 export function createPanelWindow(): BrowserWindow {
@@ -55,14 +104,14 @@ export function createPanelWindow(): BrowserWindow {
   })
 
   panelWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  currentOpacity = 1
+  panelWindow.setOpacity(1)
 
   if (process.env.ELECTRON_RENDERER_URL) {
     panelWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
     panelWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-
-  // Panel stays open until closed via X button or tray icon toggle.
 
   panelWindow.on('closed', () => {
     panelWindow = null
@@ -126,6 +175,7 @@ export function showPanel(trayBounds?: Rectangle): void {
 
   positionPanelNearTray(trayBounds)
   panelWindow.setAlwaysOnTop(true, 'pop-up-menu')
+  setPanelOpacity(1, false)
   panelWindow.show()
   panelWindow.focus()
 }
@@ -145,7 +195,7 @@ export function togglePanel(trayBounds?: Rectangle): void {
 export function setPinned(pinned: boolean): void {
   isPinned = pinned
   if (panelWindow) {
-    panelWindow.setAlwaysOnTop(pinned || true, pinned ? 'floating' : 'pop-up-menu')
+    panelWindow.setAlwaysOnTop(true, pinned ? 'floating' : 'pop-up-menu')
   }
 }
 
@@ -160,6 +210,11 @@ export function registerWindowIpc(): void {
   })
 
   ipcMain.handle(IpcChannels.WINDOW_IS_PINNED, () => isPinned)
+
+  ipcMain.handle(IpcChannels.WINDOW_SET_OPACITY, (_e, opacity: number, animate?: boolean) => {
+    setPanelOpacity(typeof opacity === 'number' ? opacity : 1, animate !== false)
+    return true
+  })
 
   ipcMain.handle(IpcChannels.THEME_GET, () => {
     return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'

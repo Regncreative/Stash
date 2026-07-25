@@ -6,11 +6,13 @@ export const IpcChannels = {
   WINDOW_PIN: 'window:pin',
   WINDOW_IS_PINNED: 'window:is-pinned',
   WINDOW_BLUR: 'window:blur',
+  WINDOW_SET_OPACITY: 'window:set-opacity',
 
   // Files
   FILES_LIST: 'files:list',
   FILES_ADD: 'files:add',
   FILES_REMOVE: 'files:remove',
+  FILES_CLEAR_MISSING: 'files:clear-missing',
   FILES_PIN: 'files:pin',
   FILES_MOVE: 'files:move',
   FILES_OPEN: 'files:open',

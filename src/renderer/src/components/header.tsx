@@ -4,9 +4,10 @@ import { Search, Settings, X } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
 import { formatBytes } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 export function Header() {
+  const t = useT()
   const searchQuery = useStashStore((s) => s.searchQuery)
   const setSearch = useStashStore((s) => s.setSearch)
   const stats = useStashStore((s) => s.stats)
@@ -58,7 +59,7 @@ export function Header() {
               Stash
             </h1>
             <p className="mt-1.5 truncate text-[13px] font-normal leading-none text-[var(--muted-foreground)]">
-              {stats.shelfCount} {tr.shelvesCap} · {stats.fileCount} {tr.filesCap} ·{' '}
+              {stats.shelfCount} {t.shelvesCap} · {stats.fileCount} {t.filesCap} ·{' '}
               {formatBytes(stats.totalSize)}
             </p>
           </div>
@@ -68,7 +69,7 @@ export function Header() {
           <button
             type="button"
             className={cn('icon-btn', (searchOpen || searchQuery) && 'active')}
-            aria-label={tr.search}
+            aria-label={t.search}
             onClick={() => setSearchOpen((v) => !v)}
           >
             <Search size={18} strokeWidth={1.75} />
@@ -76,7 +77,7 @@ export function Header() {
           <button
             type="button"
             className={cn('icon-btn', showSettings && 'active')}
-            aria-label={tr.settings}
+            aria-label={t.settings}
             aria-pressed={showSettings}
             onClick={() => setShowSettings(!showSettings)}
           >
@@ -85,7 +86,7 @@ export function Header() {
           <button
             type="button"
             className="icon-btn"
-            aria-label={tr.close}
+            aria-label={t.close}
             onClick={() => void window.stash.hideWindow()}
           >
             <X size={18} strokeWidth={1.75} />
@@ -112,8 +113,8 @@ export function Header() {
                 ref={inputRef}
                 value={searchQuery}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={tr.searchPlaceholder}
-                aria-label={tr.search}
+                placeholder={t.searchPlaceholder}
+                aria-label={t.search}
                 className="h-9 w-full rounded-[10px] border border-[var(--border)] bg-[var(--pill)] pl-9 pr-9 text-[13px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition duration-150 focus:border-[var(--accent)]"
               />
               {searchQuery && (
@@ -121,7 +122,7 @@ export function Header() {
                   type="button"
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   onClick={() => setSearch('')}
-                  aria-label={tr.clearSearch}
+                  aria-label={t.clearSearch}
                 >
                   <X size={14} strokeWidth={1.75} />
                 </button>

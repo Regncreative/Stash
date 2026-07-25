@@ -2,6 +2,8 @@ import { app, Notification } from 'electron'
 import { autoUpdater, type UpdateInfo } from 'electron-updater'
 import { getPanelWindow } from './window'
 import { IpcChannels } from '../shared/ipc'
+import { getSettings } from './database'
+import { getMessages } from '../shared/i18n'
 import type { UpdateStatus } from '../shared/types'
 
 let lastStatus: UpdateStatus = { state: 'idle' }
@@ -15,6 +17,7 @@ function broadcast(status: UpdateStatus): void {
 
 function notify(title: string, body: string): void {
   if (!Notification.isSupported()) return
+  if (!getSettings().notifications) return
   new Notification({ title, body }).show()
 }
 
@@ -37,7 +40,8 @@ export function initUpdater(): void {
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
     broadcast({ state: 'available', version: info.version })
-    notify('Stash güncellemesi', `${info.version} sürümü indiriliyor…`)
+    const t = getMessages(getSettings().language)
+    notify(t.updateNotifyTitle, t.updateNotifyBody(info.version))
   })
 
   autoUpdater.on('update-not-available', (info: UpdateInfo) => {
@@ -50,7 +54,8 @@ export function initUpdater(): void {
 
   autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
     broadcast({ state: 'downloaded', version: info.version })
-    notify('Stash hazır', `${info.version} indirildi. Yeniden başlatınca kurulur.`)
+    const t = getMessages(getSettings().language)
+    notify(t.updateReadyNotifyTitle, t.updateReadyNotifyBody(info.version))
   })
 
   autoUpdater.on('error', (err) => {
@@ -79,21 +84,23 @@ export async function checkForUpdates(manual: boolean): Promise<UpdateStatus> {
 
   try {
     const result = await autoUpdater.checkForUpdates()
+    const t = getMessages(getSettings().language)
     if (!result) {
-      const status: UpdateStatus = { state: 'error', message: 'Kontrol başarısız' }
+      const status: UpdateStatus = { state: 'error', message: t.updateError }
       broadcast(status)
       return status
     }
     // Events will refine status; return current snapshot.
     if (manual && lastStatus.state === 'not-available') {
-      notify('Stash', `Güncelsiniz (${app.getVersion()})`)
+      notify('Stash', t.updateUpToDateNotify(app.getVersion()))
     }
     return lastStatus
   } catch (err) {
+    const t = getMessages(getSettings().language)
     const message = err instanceof Error ? err.message : String(err)
     const status: UpdateStatus = { state: 'error', message }
     broadcast(status)
-    if (manual) notify('Güncelleme hatası', message)
+    if (manual) notify(t.updateError, message)
     return status
   }
 }

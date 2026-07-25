@@ -2,15 +2,13 @@ import { Tray, Menu, nativeImage, app, NativeImage } from 'electron'
 import { join } from 'path'
 import { showPanel, togglePanel, hidePanel, setQuitting, getPanelWindow } from './window'
 import { checkForUpdates, getUpdateStatus, installUpdateNow } from './updater'
+import { getSettings } from './database'
+import { getMessages } from '../shared/i18n'
 
 let tray: Tray | null = null
 
 function createTrayIcon(): NativeImage {
-  // 16x16 template-style icon (simple shelf/stack glyph as PNG buffer)
-  // Minimal ICO-like PNG: stacked rectangles representing a "stash"
   const size = 16
-  // Create a simple monochrome icon programmatically via empty + overlay
-  // Prefer packaged resource if present
   const iconPath = join(__dirname, '../../resources/tray-icon.png')
   try {
     const img = nativeImage.createFromPath(iconPath)
@@ -21,7 +19,6 @@ function createTrayIcon(): NativeImage {
     // fall through
   }
 
-  // Fallback: generate a simple icon from raw pixels (blue square with white lines)
   const buffer = Buffer.alloc(size * size * 4)
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -46,14 +43,11 @@ function createTrayIcon(): NativeImage {
   return nativeImage.createFromBuffer(buffer, { width: size, height: size })
 }
 
-export function createTray(): Tray {
-  const icon = createTrayIcon()
-  tray = new Tray(icon)
-  tray.setToolTip('Stash')
-
-  const contextMenu = Menu.buildFromTemplate([
+function buildContextMenu(): Menu {
+  const t = getMessages(getSettings().language)
+  return Menu.buildFromTemplate([
     {
-      label: 'Aç',
+      label: t.trayOpen,
       click: () => {
         const bounds = tray?.getBounds()
         showPanel(bounds)
@@ -61,7 +55,7 @@ export function createTray(): Tray {
     },
     { type: 'separator' },
     {
-      label: 'Ayarlar',
+      label: t.traySettings,
       click: () => {
         const bounds = tray?.getBounds()
         showPanel(bounds)
@@ -71,7 +65,7 @@ export function createTray(): Tray {
       }
     },
     {
-      label: 'Güncellemeleri denetle',
+      label: t.trayCheckUpdates,
       click: () => {
         const status = getUpdateStatus()
         if (status.state === 'downloaded') {
@@ -83,7 +77,7 @@ export function createTray(): Tray {
     },
     { type: 'separator' },
     {
-      label: 'Stash’ten çık',
+      label: t.trayQuit,
       click: () => {
         setQuitting(true)
         hidePanel()
@@ -91,8 +85,18 @@ export function createTray(): Tray {
       }
     }
   ])
+}
 
-  tray.setContextMenu(contextMenu)
+export function rebuildTrayMenu(): void {
+  if (!tray) return
+  tray.setContextMenu(buildContextMenu())
+}
+
+export function createTray(): Tray {
+  const icon = createTrayIcon()
+  tray = new Tray(icon)
+  tray.setToolTip('Stash')
+  tray.setContextMenu(buildContextMenu())
 
   tray.on('click', () => {
     const bounds = tray?.getBounds()
@@ -100,7 +104,7 @@ export function createTray(): Tray {
   })
 
   tray.on('right-click', () => {
-    tray?.popUpContextMenu(contextMenu)
+    tray?.popUpContextMenu(buildContextMenu())
   })
 
   return tray

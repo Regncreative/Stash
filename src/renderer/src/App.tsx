@@ -1,3 +1,4 @@
+import { useIdleOpacity } from '@/hooks/use-idle-opacity'
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Header } from './components/header'
@@ -6,11 +7,13 @@ import { FileList } from './components/file-list'
 import { DropZone } from './components/drop-zone'
 import { ContextMenu } from './components/context-menu'
 import { Toast } from './components/toast'
+import { ConfirmDialog } from './components/confirm-dialog'
 import { SettingsPanel } from './components/settings-panel'
 import { useStashStore } from './stores/stash-store'
-import { tr } from './lib/i18n'
+import { useT } from './lib/i18n'
 
 export default function App() {
+  const t = useT()
   const ready = useStashStore((s) => s.ready)
   const init = useStashStore((s) => s.init)
   const refresh = useStashStore((s) => s.refresh)
@@ -18,6 +21,10 @@ export default function App() {
   const setShowSettings = useStashStore((s) => s.setShowSettings)
   const setTheme = useStashStore((s) => s.setTheme)
   const showToast = useStashStore((s) => s.showToast)
+  const idleOpacity = useStashStore((s) => s.settings?.idleOpacity ?? 0.4)
+  const idleTimeoutSec = useStashStore((s) => s.settings?.idleTimeoutSec ?? 10)
+
+  useIdleOpacity(ready, idleOpacity, idleTimeoutSec)
 
   useEffect(() => {
     void init()
@@ -27,7 +34,7 @@ export default function App() {
     const unsubAdded = window.stash.onFilesAdded((result) => {
       void refresh()
       if (result.added > 0) {
-        showToast(tr.filesAdded(result.added, result.shelfName))
+        showToast(t.filesAdded(result.added, result.shelfName))
       }
     })
     const unsubTheme = window.stash.onThemeChanged((theme) => {
@@ -40,21 +47,21 @@ export default function App() {
     const unsubUpdate = window.stash.onUpdateStatus((status) => {
       switch (status.state) {
         case 'available':
-          showToast(tr.updateAvailable(status.version))
+          showToast(t.updateAvailable(status.version))
           break
         case 'downloading':
           if (status.percent === 0 || status.percent % 25 === 0 || status.percent >= 99) {
-            showToast(tr.updateDownloading(status.percent))
+            showToast(t.updateDownloading(status.percent))
           }
           break
         case 'downloaded':
-          showToast(tr.updateReady(status.version))
+          showToast(t.updateReady(status.version))
           break
         case 'dev':
-          showToast(tr.updateDev)
+          showToast(t.updateDev)
           break
         case 'error':
-          showToast(tr.updateError)
+          showToast(t.updateError)
           break
         default:
           break
@@ -66,7 +73,7 @@ export default function App() {
       unsubNav()
       unsubUpdate()
     }
-  }, [refresh, setShowSettings, setTheme, showToast])
+  }, [refresh, setShowSettings, setTheme, showToast, t])
 
   if (!ready) {
     return (
@@ -95,6 +102,7 @@ export default function App() {
         )}
         <ContextMenu />
         <Toast />
+        <ConfirmDialog />
       </DropZone>
     </motion.div>
   )

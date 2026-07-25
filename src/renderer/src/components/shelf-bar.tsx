@@ -1,31 +1,44 @@
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ShelfIcon } from './file-icon'
 import { useStashStore } from '@/stores/stash-store'
 import { cn } from '@/lib/utils'
-import { tr } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 
 export function ShelfBar() {
+  const t = useT()
   const shelves = useStashStore((s) => s.shelves)
   const activeShelfId = useStashStore((s) => s.activeShelfId)
   const setActiveShelf = useStashStore((s) => s.setActiveShelf)
   const refresh = useStashStore((s) => s.refresh)
   const files = useStashStore((s) => s.files)
+  const askPrompt = useStashStore((s) => s.askPrompt)
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const countFor = (id: string) => files.filter((f) => f.shelfId === id).length
+
+  useEffect(() => {
+    if (!creating) return
+    const t = window.setTimeout(() => inputRef.current?.focus(), 20)
+    return () => window.clearTimeout(t)
+  }, [creating])
+
+  const cancelCreate = () => {
+    setCreating(false)
+    setName('')
+  }
 
   const create = async () => {
     const trimmed = name.trim()
     if (!trimmed) {
-      setCreating(false)
+      cancelCreate()
       return
     }
     const shelf = await window.stash.createShelf({ name: trimmed, icon: 'folder' })
-    setName('')
-    setCreating(false)
+    cancelCreate()
     await refresh()
     setActiveShelf(shelf.id)
   }
@@ -45,7 +58,13 @@ export function ShelfBar() {
               onClick={() => setActiveShelf(shelf.id)}
               onContextMenu={async (e) => {
                 e.preventDefault()
-                const next = window.prompt(tr.renameShelf, shelf.name)
+                const next = await askPrompt({
+                  title: t.renameShelf,
+                  message: t.renameShelfHint,
+                  promptDefault: shelf.name,
+                  promptPlaceholder: t.shelfName,
+                  confirmLabel: t.save
+                })
                 if (next && next.trim() && next.trim() !== shelf.name) {
                   await window.stash.renameShelf(shelf.id, next.trim())
                   await refresh()
@@ -78,19 +97,30 @@ export function ShelfBar() {
 
         {creating ? (
           <input
+            ref={inputRef}
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void create()
+              e.stopPropagation()
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void create()
+              }
               if (e.key === 'Escape') {
-                setCreating(false)
-                setName('')
+                e.preventDefault()
+                cancelCreate()
               }
             }}
-            onBlur={() => void create()}
-            placeholder={tr.shelfName}
-            className="h-10 w-[110px] shrink-0 rounded-full border border-[var(--border)] bg-[var(--pill)] px-3 text-[13px] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+            onBlur={() => {
+              // Delay so Enter handler can run first
+              window.setTimeout(() => {
+                if (document.activeElement === inputRef.current) return
+                void create()
+              }, 120)
+            }}
+            placeholder={t.shelfName}
+            className="h-10 w-[120px] shrink-0 rounded-full border border-[var(--accent)] bg-[var(--pill)] px-3 text-[13px] text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
           />
         ) : (
           <motion.button
@@ -99,8 +129,11 @@ export function ShelfBar() {
             whileTap={{ scale: 0.96 }}
             transition={{ duration: 0.15 }}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--pill)] text-[var(--muted-foreground)] transition-colors duration-150 hover:bg-[var(--pill-hover)] hover:text-[var(--foreground)]"
-            aria-label={tr.createShelf}
-            onClick={() => setCreating(true)}
+            aria-label={t.createShelf}
+            onClick={() => {
+              setName('')
+              setCreating(true)
+            }}
           >
             <Plus size={18} strokeWidth={1.75} />
           </motion.button>

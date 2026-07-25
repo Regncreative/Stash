@@ -10,6 +10,7 @@ import {
   ShelfStats,
   StashFile
 } from '../../shared/types'
+import { normalizeLanguage } from '../../shared/i18n'
 
 let db: Database.Database | null = null
 
@@ -355,18 +356,53 @@ export function getSettings(): AppSettings {
   for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof AppSettings)[]) {
     if (map.has(key)) {
       ;(settings as Record<string, unknown>)[key] = map.get(key)
+    } else if (key !== 'defaultShelfId') {
+      // Persist newly added setting keys for existing installs.
+      setSettingRaw(getDb(), key, DEFAULT_SETTINGS[key])
     }
   }
   if (!settings.defaultShelfId) {
     const first = listShelves()[0]
     if (first) settings.defaultShelfId = first.id
   }
+  settings.language = normalizeLanguage(settings.language)
+  if (!['added', 'name', 'recent', 'size'].includes(String(settings.fileSort))) {
+    settings.fileSort = 'added'
+  }
+  settings.notifications = settings.notifications !== false
+  settings.startWithWindows = settings.startWithWindows === true
+  const idle = Number(settings.idleOpacity)
+  settings.idleOpacity = Number.isFinite(idle)
+    ? Math.min(0.7, Math.max(0.1, idle))
+    : DEFAULT_SETTINGS.idleOpacity
+  const timeout = Number(settings.idleTimeoutSec)
+  settings.idleTimeoutSec = Number.isFinite(timeout)
+    ? Math.min(60, Math.max(5, Math.round(timeout)))
+    : DEFAULT_SETTINGS.idleTimeoutSec
   return settings
 }
 
 export function setSettings(partial: Partial<AppSettings>): AppSettings {
   const current = getSettings()
   const next = { ...current, ...partial }
+  if (partial.language !== undefined) {
+    next.language = normalizeLanguage(partial.language)
+    partial = { ...partial, language: next.language }
+  }
+  if (partial.idleOpacity !== undefined) {
+    const idle = Number(partial.idleOpacity)
+    next.idleOpacity = Number.isFinite(idle)
+      ? Math.min(0.7, Math.max(0.1, idle))
+      : current.idleOpacity
+    partial = { ...partial, idleOpacity: next.idleOpacity }
+  }
+  if (partial.idleTimeoutSec !== undefined) {
+    const timeout = Number(partial.idleTimeoutSec)
+    next.idleTimeoutSec = Number.isFinite(timeout)
+      ? Math.min(60, Math.max(5, Math.round(timeout)))
+      : current.idleTimeoutSec
+    partial = { ...partial, idleTimeoutSec: next.idleTimeoutSec }
+  }
   for (const [key, value] of Object.entries(partial)) {
     setSettingRaw(getDb(), key, value)
   }
