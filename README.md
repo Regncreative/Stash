@@ -1,53 +1,147 @@
-# Stash
+<p align="center">
+  <img src="docs/logo.png" alt="Stash logo" width="96" height="96">
+</p>
 
-[![CI](https://github.com/Regncreative/Stash/actions/workflows/ci.yml/badge.svg)](https://github.com/Regncreative/Stash/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/Regncreative/Stash/actions/workflows/codeql.yml/badge.svg)](https://github.com/Regncreative/Stash/actions/workflows/codeql.yml)
+<h1 align="center">Stash</h1>
 
-A modern file shelf for Windows — collect, organize and drag files from the system tray.
+<p align="center">
+  <strong>A modern file shelf for Windows</strong><br>
+  Keep files within reach — without cluttering your desktop.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Regncreative/Stash/actions/workflows/ci.yml"><img src="https://github.com/Regncreative/Stash/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Regncreative/Stash/actions/workflows/codeql.yml"><img src="https://github.com/Regncreative/Stash/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/Regncreative/Stash/releases/latest"><img src="https://img.shields.io/github/v/release/Regncreative/Stash?label=latest%20release" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/Electron-34-47848F?logo=electron&logoColor=white" alt="Electron">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
+</p>
+
+<p align="center">
+  <img src="docs/hero.jpg" alt="Stash floating panel on Windows" width="900">
+</p>
+
+## What is Stash?
+
+Windows doesn’t have a convenient place to park files while you work — so people pile them on the desktop, spam Downloads, or lose track mid-flow.
+
+**Stash** adds a lightweight file shelf that lives in the system tray. Drop files onto shelves, pin what matters, then drag them back into any app when you need them. Stash stores **references only** — your files stay where they are on disk.
 
 Designed to feel like a built-in Windows 11 feature (Fluent Design), not a typical Electron utility.
 
-## Stack
+## Features
 
-- Electron + React + TypeScript + Vite (`electron-vite`)
-- Tailwind CSS + Framer Motion + Zustand
-- better-sqlite3
-- electron-builder
+- **System tray integration** — silent background app, always one click away
+- **Drag & drop shelves** — drop files in, drag them out to Explorer, browsers, and other apps
+- **Global shortcut** — open the panel with `Ctrl+Shift+Space` (customizable)
+- **Multiple shelves** — organize by context (Work, Personal, Temporary…)
+- **Instant search & filters** — find files by name, type, or shelf
+- **Fluent Design UI** — dark/light themes, accent colors, smooth motion
+- **Turkish & English** — full UI + tray localization
+- **Auto launch** — start with Windows (installed builds)
+- **Auto update** — updates from GitHub Releases
+- **SQLite storage** — fast local metadata, no cloud required
+- **Missing-file awareness** — deleted or recycled paths show as unavailable until you clear them
 
-## Project structure
+## Screenshots
 
-```
-src/
-  main/           Electron main — tray, panel window, IPC, auto-launch
-    database/     SQLite schema + queries
-  preload/        contextBridge API (`window.stash`)
-  renderer/       React UI (Fluent panel)
-  shared/         Shared types + IPC channel names
-resources/        Tray / app icons
-```
+| Panel | Settings | Tray |
+|:---:|:---:|:---:|
+| <img src="docs/panel.jpg" width="280" alt="Stash main panel"> | <img src="docs/settings.jpg" width="280" alt="Stash settings"> | <img src="docs/tray.jpg" width="280" alt="Stash in the system tray"> |
 
-## Development
+## Installation
+
+### For everyone (recommended)
+
+1. Download **[Stash-Setup.exe](https://github.com/Regncreative/Stash/releases/latest)** from the latest release
+2. Run the installer
+3. Launch **Stash** — it appears in the system tray
+4. Click the tray icon (or press `Ctrl+Shift+Space`) to open the panel
+
+> Tip: enable **Start with Windows** in Settings so Stash is ready after sign-in.
+
+### For developers
 
 ```bash
 npm install
 npm run dev
 ```
 
-The app starts silently in the system tray. Click the tray icon (or press `Ctrl+Shift+Space`) to open the panel.
+The app starts silently in the tray. Click the tray icon or use the hotkey to open the panel.
 
-## Scripts
+## Development
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Development mode |
 | `npm run build` | Production build (`out/`) |
-| `npm run dist` | Build Windows installer (`release/`) |
+| `npm run dist` | Build Windows installer |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 
-## License
+## Tech stack
 
-MIT
+- **Electron** + **React** + **TypeScript** + **Vite** (`electron-vite`)
+- **Tailwind CSS** + **Framer Motion** + **Zustand**
+- **better-sqlite3** for local storage
+- **electron-builder** + **electron-updater** for packaging and updates
+
+## Architecture
+
+```text
+┌─────────────────────────────────────────┐
+│                 Windows                 │
+│  Tray · Global hotkey · Shell / files   │
+└───────────────────┬─────────────────────┘
+                    │
+┌───────────────────▼─────────────────────┐
+│            Electron Main                │
+│  Window · Tray · Auto-launch · Updater  │
+└───────────────────┬─────────────────────┘
+                    │ IPC
+┌───────────────────▼─────────────────────┐
+│           Preload bridge                │
+│         window.stash (typed API)        │
+└───────────────────┬─────────────────────┘
+                    │
+┌───────────────────▼─────────────────────┐
+│           React Renderer                │
+│     Fluent panel · shelves · settings   │
+└───────────────────┬─────────────────────┘
+                    │
+┌───────────────────▼─────────────────────┐
+│               SQLite                    │
+│     shelves · file refs · settings      │
+└─────────────────────────────────────────┘
+```
+
+## Project structure
+
+```text
+src/
+  main/           Electron main — tray, panel window, IPC, auto-launch
+    database/     SQLite schema + queries
+  preload/        contextBridge API (`window.stash`)
+  renderer/       React UI (Fluent panel)
+  shared/         Shared types, i18n, IPC channel names
+resources/        Tray / app icons
+docs/             README images
+```
+
+## Roadmap
+
+- [x] System tray panel
+- [x] Shelves & drag-and-drop
+- [x] Global shortcut
+- [x] Themes, accents, localization (TR/EN)
+- [x] Auto update via GitHub Releases
+- [x] Idle opacity & missing-file cleanup
+- [ ] Plugins / extensions
+- [ ] Optional cloud sync
+- [ ] Smarter / AI-assisted search
+- [ ] Official demo GIF in README
 
 ## Releases & auto-update
 
@@ -55,7 +149,7 @@ Packaged builds check [GitHub Releases](https://github.com/Regncreative/Stash/re
 
 ### Publish a new version
 
-1. Bump `version` in `package.json` (e.g. `1.0.0` → `1.0.1`)
+1. Bump `version` in `package.json` (e.g. `1.0.1` → `1.0.2`)
 2. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope
 3. In PowerShell:
 
@@ -63,8 +157,19 @@ Packaged builds check [GitHub Releases](https://github.com/Regncreative/Stash/re
 $env:GH_TOKEN = "ghp_..."
 $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
 # Prefer Temp output if Defender locks C:\Stash\release
-# or add C:\Stash as a Defender exclusion, then:
 npm run release
 ```
 
-This builds the installer and uploads it to a GitHub Release. Other PCs with Stash installed will download it automatically.
+This builds the installer and uploads it to a GitHub Release. Installed copies of Stash download it automatically.
+
+## Contributing
+
+Issues and pull requests are welcome.
+
+1. Fork the repo and create a feature branch
+2. Run `npm run lint` and `npm run typecheck` before opening a PR
+3. Keep UI changes consistent with the Fluent panel language already in the app
+
+## License
+
+[MIT](LICENSE) © Regncreative
