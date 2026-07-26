@@ -11,6 +11,7 @@ export function Header() {
   const searchQuery = useStashStore((s) => s.searchQuery)
   const setSearch = useStashStore((s) => s.setSearch)
   const stats = useStashStore((s) => s.stats)
+  const appVersion = useStashStore((s) => s.appVersion)
   const setShowSettings = useStashStore((s) => s.setShowSettings)
   const showSettings = useStashStore((s) => s.showSettings)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -67,6 +68,11 @@ export function Header() {
           <div className="min-w-0">
             <h1 className="truncate text-[22px] font-semibold leading-none tracking-[-0.02em] text-[var(--foreground)]">
               Stash
+              {appVersion ? (
+                <span className="ml-2 align-middle text-[12px] font-medium tracking-normal text-[var(--muted-foreground)]">
+                  v{appVersion}
+                </span>
+              ) : null}
             </h1>
             <p className="mt-1.5 truncate text-[13px] font-normal leading-none text-[var(--muted-foreground)]">
               {stats.shelfCount} {t.shelvesCap} · {stats.fileCount} {t.filesCap} ·{' '}

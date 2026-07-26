@@ -52,6 +52,8 @@ export interface StashApi {
   setSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
   getSystemTheme: () => Promise<'light' | 'dark'>
   notify: (title: string, body: string) => Promise<void>
+  getAppVersion: () => Promise<string>
+  openReleases: () => Promise<boolean>
 
   // Updates
   checkForUpdates: () => Promise<UpdateStatus>
@@ -101,6 +103,8 @@ const api: StashApi = {
   setSettings: (partial) => ipcRenderer.invoke(IpcChannels.SETTINGS_SET, partial),
   getSystemTheme: () => ipcRenderer.invoke(IpcChannels.THEME_GET),
   notify: (title, body) => ipcRenderer.invoke(IpcChannels.NOTIFY, title, body),
+  getAppVersion: () => ipcRenderer.invoke(IpcChannels.APP_GET_VERSION),
+  openReleases: () => ipcRenderer.invoke(IpcChannels.OPEN_RELEASES),
 
   checkForUpdates: () => ipcRenderer.invoke(IpcChannels.UPDATE_CHECK),
   installUpdate: () => ipcRenderer.invoke(IpcChannels.UPDATE_INSTALL),

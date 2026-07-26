@@ -1,6 +1,6 @@
 {
   "name": "stash",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A modern file shelf for Windows — collect, organize and drag files from the system tray",
   "main": "./out/main/index.js",
   "author": "Regncreative",
@@ -80,7 +80,7 @@
       ],
       "icon": "resources/icon.png",
       "signAndEditExecutable": false,
-      "publisherName": "Regncreative"
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,

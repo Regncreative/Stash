@@ -26,6 +26,7 @@ export function SettingsPanel() {
   const refresh = useStashStore((s) => s.refresh)
   const showToast = useStashStore((s) => s.showToast)
   const askConfirm = useStashStore((s) => s.askConfirm)
+  const appVersion = useStashStore((s) => s.appVersion)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
   const [clearing, setClearing] = useState(false)
 
@@ -345,6 +346,9 @@ export function SettingsPanel() {
         </SettingsCard>
 
         <SettingsCard title={t.updatesSection}>
+          <p className="text-center text-[12px] text-[var(--muted-foreground)]">
+            {t.currentVersion(appVersion || '—')}
+          </p>
           <button
             type="button"
             className="h-10 w-full rounded-[12px] bg-[var(--pill)] text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill-hover)]"
@@ -367,11 +371,26 @@ export function SettingsPanel() {
             </p>
           )}
           {updateStatus.state === 'error' && (
-            <p className="text-center text-[12px] text-[var(--destructive)]">{t.updateError}</p>
+            <div className="space-y-2 text-center">
+              <p className="text-[12px] text-[var(--destructive)]">{t.updateError}</p>
+              <p className="text-[11px] leading-snug text-[var(--muted-foreground)]">
+                {t.updateErrorHint}
+              </p>
+              <button
+                type="button"
+                className="h-9 w-full rounded-[12px] border border-[var(--border)] text-[12px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--pill)]"
+                onClick={() => void window.stash.openReleases()}
+              >
+                {t.downloadManually}
+              </button>
+            </div>
           )}
         </SettingsCard>
 
-        <p className="pt-1 text-center text-[11px] text-[var(--muted-foreground)]">{t.footer}</p>
+        <p className="pt-1 text-center text-[11px] text-[var(--muted-foreground)]">
+          {t.footer}
+          {appVersion ? ` · v${appVersion}` : ''}
+        </p>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { app, Notification } from 'electron'
-import { autoUpdater, type UpdateInfo } from 'electron-updater'
+import { autoUpdater, NsisUpdater, type UpdateInfo } from 'electron-updater'
 import { getPanelWindow } from './window'
 import { IpcChannels } from '../shared/ipc'
 import { getSettings } from './database'
@@ -33,6 +33,10 @@ export function initUpdater(): void {
 
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
+  // Builds are not Authenticode-signed; skip publisher checks so updates install.
+  if (autoUpdater instanceof NsisUpdater) {
+    autoUpdater.verifyUpdateCodeSignature = async () => null
+  }
 
   autoUpdater.on('checking-for-update', () => {
     broadcast({ state: 'checking' })

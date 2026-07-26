@@ -39,6 +39,7 @@ interface StashState {
   files: StashFile[]
   stats: ShelfStats
   settings: AppSettings | null
+  appVersion: string
   activeShelfId: string | null
   searchQuery: string
   filter: FileFilter
@@ -81,6 +82,7 @@ export const useStashStore = create<StashState>((set, get) => ({
   files: [],
   stats: { shelfCount: 0, fileCount: 0, totalSize: 0 },
   settings: null,
+  appVersion: '',
   activeShelfId: null,
   searchQuery: '',
   filter: 'all',
@@ -93,11 +95,12 @@ export const useStashStore = create<StashState>((set, get) => ({
   confirm: null,
 
   init: async () => {
-    const [shelves, settings, systemTheme, pinned] = await Promise.all([
+    const [shelves, settings, systemTheme, pinned, appVersion] = await Promise.all([
       window.stash.listShelves(),
       window.stash.getSettings(),
       window.stash.getSystemTheme(),
-      window.stash.isPinned()
+      window.stash.isPinned(),
+      window.stash.getAppVersion()
     ])
 
     const theme =
@@ -120,6 +123,7 @@ export const useStashStore = create<StashState>((set, get) => ({
       files,
       stats,
       settings: normalizeSettings(settings),
+      appVersion,
       activeShelfId,
       pinned,
       theme,

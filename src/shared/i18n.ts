@@ -100,8 +100,11 @@ export type Messages = {
   updateLatest: string
   updateDev: string
   updateError: string
+  updateErrorHint: string
+  downloadManually: string
   checkUpdates: string
   installAndRestart: string
+  currentVersion: (v: string) => string
 
   filesAdded: (n: number, shelf: string) => string
   alreadyOnShelf: string
@@ -231,9 +234,12 @@ const tr: Messages = {
   updateReady: (v) => `${v} hazır — yeniden başlatınca kurulur`,
   updateLatest: 'Güncelsiniz',
   updateDev: 'Güncelleme yalnızca kurulu sürümde çalışır',
-  updateError: 'Güncelleme kontrolü başarısız',
+  updateError: 'Güncelleme başarısız',
+  updateErrorHint: '1.0.1 ve öncesi otomatik güncellenemiyor. En son kurucuyu indir.',
+  downloadManually: 'Manuel indir',
   checkUpdates: 'Güncellemeleri denetle',
   installAndRestart: 'Kur ve yeniden başlat',
+  currentVersion: (v) => `Sürüm ${v}`,
 
   filesAdded: (n, shelf) => `✓ ${n} dosya eklendi · ${shelf}`,
   alreadyOnShelf: 'Bu rafta zaten var',
@@ -363,9 +369,12 @@ const en: Messages = {
   updateReady: (v) => `${v} ready — restarts to install`,
   updateLatest: 'You’re up to date',
   updateDev: 'Updates only work in the installed app',
-  updateError: 'Update check failed',
+  updateError: 'Update failed',
+  updateErrorHint: '1.0.1 and earlier can’t auto-update. Download the latest installer.',
+  downloadManually: 'Download manually',
   checkUpdates: 'Check for updates',
   installAndRestart: 'Install and restart',
+  currentVersion: (v) => `Version ${v}`,
 
   filesAdded: (n, shelf) => `✓ ${n} files added · ${shelf}`,
   alreadyOnShelf: 'Already on this shelf',

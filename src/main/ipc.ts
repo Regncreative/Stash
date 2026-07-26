@@ -379,6 +379,12 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle(IpcChannels.APP_GET_VERSION, () => app.getVersion())
+  ipcMain.handle(IpcChannels.OPEN_RELEASES, () => {
+    void shell.openExternal('https://github.com/Regncreative/Stash/releases/latest')
+    return true
+  })
+
   ipcMain.handle(IpcChannels.UPDATE_CHECK, () => checkForUpdates(true))
   ipcMain.handle(IpcChannels.UPDATE_INSTALL, () => {
     installUpdateNow()

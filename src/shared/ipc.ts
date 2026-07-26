@@ -45,6 +45,8 @@ export const IpcChannels = {
   THEME_CHANGED: 'theme:changed',
   NOTIFY: 'notify',
   GET_PATH_FOR_FILE: 'get-path-for-file',
+  APP_GET_VERSION: 'app:get-version',
+  OPEN_RELEASES: 'app:open-releases',
 
   // Updates
   UPDATE_CHECK: 'update:check',
