@@ -5,12 +5,13 @@ import { randomUUID } from 'crypto'
 import {
   AppSettings,
   DEFAULT_SETTINGS,
-  DEFAULT_SHELVES,
   Shelf,
   ShelfStats,
   StashFile,
+  getDefaultShelves,
   normalizeSettings
 } from '../../shared/types'
+import { resolveSystemLanguage } from '../../shared/i18n'
 
 let db: Database.Database | null = null
 
@@ -78,7 +79,8 @@ function seedDefaults(database: Database.Database): void {
     )
     const now = Date.now()
     const ids: string[] = []
-    for (const shelf of DEFAULT_SHELVES) {
+    const lang = resolveSystemLanguage(app.getLocale())
+    for (const shelf of getDefaultShelves(lang)) {
       const id = randomUUID()
       ids.push(id)
       insert.run(id, shelf.name, shelf.icon, shelf.color, now, shelf.sortOrder)
@@ -377,16 +379,19 @@ export function getSettings(): AppSettings {
       setSettingRaw(getDb(), 'lastShelfId', settings.lastShelfId)
     }
   }
-  return normalizeSettings(settings)
+  const next = normalizeSettings(settings)
+  // Language always follows the OS — ignore any stored preference.
+  next.language = resolveSystemLanguage(app.getLocale())
+  return next
 }
 
 export function setSettings(partial: Partial<AppSettings>): AppSettings {
   const current = getSettings()
   const next = normalizeSettings({ ...current, ...partial })
+  next.language = resolveSystemLanguage(app.getLocale())
   const toWrite: Partial<AppSettings> = { ...partial }
-  if (partial.language !== undefined) {
-    toWrite.language = next.language
-  }
+  // Language is system-driven; never persist a manual override.
+  delete toWrite.language
   if (partial.idleOpacity !== undefined) {
     toWrite.idleOpacity = next.idleOpacity
   }

@@ -91,17 +91,30 @@ export type UpdateStatus =
   | { state: 'error'; message: string }
   | { state: 'dev' }
 
-export const DEFAULT_SHELVES: Omit<Shelf, 'id' | 'createdAt'>[] = [
+export const DEFAULT_SHELVES_TR: Omit<Shelf, 'id' | 'createdAt'>[] = [
   { name: 'İş', icon: 'briefcase', color: '#2563EB', sortOrder: 0 },
   { name: 'Kişisel', icon: 'heart', color: '#E74856', sortOrder: 1 },
   { name: 'Geçici', icon: 'clock', color: '#64748B', sortOrder: 2 }
 ]
 
+export const DEFAULT_SHELVES_EN: Omit<Shelf, 'id' | 'createdAt'>[] = [
+  { name: 'Work', icon: 'briefcase', color: '#2563EB', sortOrder: 0 },
+  { name: 'Personal', icon: 'heart', color: '#E74856', sortOrder: 1 },
+  { name: 'Temporary', icon: 'clock', color: '#64748B', sortOrder: 2 }
+]
+
+/** @deprecated Prefer getDefaultShelves(lang) — kept for older imports. */
+export const DEFAULT_SHELVES = DEFAULT_SHELVES_TR
+
+export function getDefaultShelves(lang: AppLanguage): Omit<Shelf, 'id' | 'createdAt'>[] {
+  return lang === 'tr' ? DEFAULT_SHELVES_TR : DEFAULT_SHELVES_EN
+}
+
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   accentColor: '#2563EB',
   startWithWindows: true,
-  language: 'tr',
+  language: 'en',
   openHotkey: 'CommandOrControl+Shift+Space',
   defaultShelfId: '',
   lastShelfId: '',
@@ -114,7 +127,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 /** Ensure settings always have valid numeric/enum fields (older DBs / partial IPC). */
 export function normalizeSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
   const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) }
-  s.language = s.language === 'en' ? 'en' : 'tr'
+  s.language = s.language === 'tr' ? 'tr' : 'en'
   const idle = Number(s.idleOpacity)
   s.idleOpacity = Number.isFinite(idle)
     ? Math.min(0.7, Math.max(0.1, idle))

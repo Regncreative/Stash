@@ -8,7 +8,7 @@ import { getPanelWindow, beginExternalDialog } from './window'
 import { syncAutoLaunch } from './auto-launch'
 import { reregisterHotkey } from './hotkey'
 import { checkForUpdates, getUpdateStatus, installUpdateNow } from './updater'
-import { rebuildTrayMenu } from './tray'
+import { getMessages } from '../shared/i18n'
 import type { FileInput } from './database'
 import type { AppSettings } from '../shared/types'
 
@@ -180,9 +180,10 @@ export function registerIpcHandlers(): void {
 
       if (result.added > 0 && settings.notifications) {
         try {
+          const t = getMessages(settings.language)
           new Notification({
             title: 'Stash',
-            body: `✓ ${result.added} dosya eklendi\n${shelf?.name ?? 'Raf'}`,
+            body: t.filesAdded(result.added, shelf?.name ?? ''),
             silent: false
           }).show()
         } catch {
@@ -363,9 +364,6 @@ export function registerIpcHandlers(): void {
     }
     if (partial.openHotkey !== undefined) {
       reregisterHotkey(next.openHotkey)
-    }
-    if (partial.language !== undefined) {
-      rebuildTrayMenu()
     }
     return next
   })

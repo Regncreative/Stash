@@ -406,8 +406,17 @@ const en: Messages = {
 
 export const dictionaries: Record<AppLanguage, Messages> = { tr, en }
 
+/** Turkish UI only for Turkish system locales; everything else → English. */
+export function resolveSystemLanguage(locale: string | null | undefined): AppLanguage {
+  const raw = String(locale ?? '')
+    .toLowerCase()
+    .replace(/_/g, '-')
+  if (raw === 'tr' || raw.startsWith('tr-')) return 'tr'
+  return 'en'
+}
+
 export function normalizeLanguage(value: string | null | undefined): AppLanguage {
-  return value === 'en' ? 'en' : 'tr'
+  return value === 'en' ? 'en' : value === 'tr' ? 'tr' : 'en'
 }
 
 export function getMessages(lang: string | null | undefined): Messages {

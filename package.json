@@ -1,7 +1,7 @@
 {
   "name": "stash",
-  "version": "1.0.3",
-  "description": "A modern file shelf for Windows — collect, organize and drag files from the system tray",
+  "version": "1.0.4",
+  "description": "Stash",
   "main": "./out/main/index.js",
   "author": "Regncreative",
   "license": "MIT",
@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint -c eslint.config.cjs .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "postinstall": "electron-builder install-app-deps"
+    "brand:electron": "node scripts/brand-electron.cjs",
+    "postinstall": "electron-builder install-app-deps && node scripts/brand-electron.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",
@@ -52,6 +53,7 @@
     "globals": "^15.14.0",
     "postcss": "^8.5.1",
     "prettier": "^3.4.2",
+    "rcedit": "^5.0.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^5.4.14"
@@ -78,8 +80,8 @@
       "target": [
         "nsis"
       ],
-      "icon": "resources/icon.png",
-      "signAndEditExecutable": false,
+      "icon": "resources/icon.ico",
+      "executableName": "Stash",
       "verifyUpdateCodeSignature": false
     },
     "nsis": {
@@ -88,6 +90,8 @@
       "createDesktopShortcut": false,
       "createStartMenuShortcut": true,
       "shortcutName": "Stash",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
       "artifactName": "Stash-Setup-${version}.${ext}"
     }
   }

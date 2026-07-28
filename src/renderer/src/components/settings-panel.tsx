@@ -4,18 +4,11 @@ import { ArrowLeft, Trash2 } from 'lucide-react'
 import { useStashStore } from '@/stores/stash-store'
 import type { FileSort, ThemeMode } from '@shared/types'
 import type { UpdateStatus } from '@shared/types'
-import type { AppLanguage } from '@shared/types'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { HotkeyRecorder } from './hotkey-recorder'
-import { FlagEn, FlagTr } from './language-flags'
 
 const ACCENTS = ['#2563EB', '#0078D4', '#8764B8', '#038387', '#00B294', '#CA5010', '#E74856', '#C239B3']
-
-const LANG_FLAGS = {
-  tr: FlagTr,
-  en: FlagEn
-} as const
 
 export function SettingsPanel() {
   const t = useT()
@@ -47,11 +40,6 @@ export function SettingsPanel() {
     light: t.themeLight,
     dark: t.themeDark
   }
-
-  const languages: { id: AppLanguage; label: string }[] = [
-    { id: 'tr', label: t.languageTr },
-    { id: 'en', label: t.languageEn }
-  ]
 
   const sortOptions: { id: FileSort; label: string }[] = [
     { id: 'added', label: t.sortAdded },
@@ -112,30 +100,6 @@ export function SettingsPanel() {
 
       <div className="scroll-autohide min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto px-5 pb-5">
         <SettingsCard title={t.appearance}>
-          <Field label={t.language}>
-            <div className="grid grid-cols-2 gap-1.5">
-              {languages.map((lang) => {
-                const Flag = LANG_FLAGS[lang.id]
-                return (
-                  <button
-                    key={lang.id}
-                    type="button"
-                    onClick={() => void updateSettings({ language: lang.id })}
-                    className={cn(
-                      'flex items-center justify-center gap-2 rounded-[10px] py-2 text-[12px] font-medium transition-colors duration-150',
-                      settings.language === lang.id
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--pill)] text-[var(--muted-foreground)] hover:bg-[var(--pill-hover)] hover:text-[var(--foreground)]'
-                    )}
-                  >
-                    <Flag className="shrink-0 rounded-[2px] shadow-sm" />
-                    {lang.label}
-                  </button>
-                )
-              })}
-            </div>
-          </Field>
-
           <Field label={t.theme}>
             <div className="grid grid-cols-3 gap-1.5">
               {(['system', 'light', 'dark'] as ThemeMode[]).map((mode) => (

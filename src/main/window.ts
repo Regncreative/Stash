@@ -93,6 +93,7 @@ export function createPanelWindow(): BrowserWindow {
     roundedCorners: false,
     backgroundColor: '#00000000',
     thickFrame: false,
+    icon: join(__dirname, '../../resources/icon.ico'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
