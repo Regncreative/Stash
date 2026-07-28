@@ -28,7 +28,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "electron-updater": "^6.8.9",
-    "framer-motion": "^11.18.2",
+    "framer-motion": "^12.43.0",
     "koffi": "^3.1.2",
     "lucide-react": "^0.474.0",
     "react": "^18.3.1",
