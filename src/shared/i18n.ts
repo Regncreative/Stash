@@ -135,10 +135,10 @@ export type Messages = {
 }
 
 const tr: Messages = {
-  shelves: 'raf',
-  shelvesCap: 'Raf',
-  files: 'dosya',
-  filesCap: 'Dosya',
+  shelves: 'Raflar',
+  shelvesCap: 'Raflar',
+  files: 'dosyalar',
+  filesCap: 'Dosyalar',
   search: 'Ara',
   searchPlaceholder: 'Dosya ara…',
   clearSearch: 'Aramayı temizle',
@@ -204,7 +204,7 @@ const tr: Messages = {
   sortRecent: 'Son açılan',
   sortSize: 'Boyut',
   clearMissing: 'Eksik dosyaları temizle',
-  clearMissingHint: 'Diskte olmayan tüm referansları raftan kaldırır',
+  clearMissingHint: 'Diskte olmayan tüm kayıtları raftan kaldırır',
   clearMissingConfirm: (n) =>
     `${n} eksik dosya referansı raftan kaldırılsın mı? Diskteki dosyalara dokunulmaz.`,
   clearMissingDone: (n) => `${n} eksik referans temizlendi`,
@@ -212,7 +212,7 @@ const tr: Messages = {
   defaultShelf: 'Varsayılan raf',
   openHotkey: 'Panel kısayolu',
   hotkeyHint: 'Tıkla, en fazla 3 tuşa bas (Esc iptal)',
-  hotkeyClick: 'Kayıt',
+  hotkeyClick: 'Kaydet',
   hotkeyRecording: 'Tuşlara bas…',
   hotkeyEmpty: 'Kısayol yok',
   hotkeyMax: 'en fazla 3',
@@ -220,7 +220,7 @@ const tr: Messages = {
   updatesSection: 'Güncelleme',
   deleteShelf: (name) => `“${name}” rafını sil`,
   deleteShelfConfirm: (name) =>
-    `“${name}” rafı silinsin mi? İçindeki dosyalar Stash’ten kalkar (diskten silinmez).`,
+    `“${name}” rafı silinsin mi? İçindeki dosyalar Stash’ten kaldırılır (diskten silinmez).`,
   cannotDeleteLast: 'Son raf silinemez',
   createShelf: 'Raf oluştur',
   shelfName: 'İsim',
@@ -235,7 +235,7 @@ const tr: Messages = {
   updateLatest: 'Güncelsiniz',
   updateDev: 'Güncelleme yalnızca kurulu sürümde çalışır',
   updateError: 'Güncelleme başarısız',
-  updateErrorHint: '1.0.1 ve öncesi otomatik güncellenemiyor. En son kurucuyu indir.',
+  updateErrorHint: '1.0.1 ve öncesi otomatik güncellenemiyor. En son kurulum dosyasını indir.',
   downloadManually: 'Manuel indir',
   checkUpdates: 'Güncellemeleri denetle',
   installAndRestart: 'Kur ve yeniden başlat',
