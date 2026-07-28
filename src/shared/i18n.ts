@@ -153,7 +153,7 @@ const tr: Messages = {
   remove: 'Kaldır',
   language: 'Dil',
   languageTr: 'Türkçe',
-  languageEn: 'English',
+  languageEn: 'İngilizce',
 
   dropHere: 'Dosyaları buraya bırakın',
   releaseToStash: 'Bırakarak ekle',
@@ -251,7 +251,7 @@ const tr: Messages = {
   filterImages: 'Görsel',
   filterVideos: 'Video',
   filterPdf: 'PDF',
-  filterOffice: 'Office',
+  filterOffice: 'Ofis',
   filterFolders: 'Klasör',
   filterArchives: 'Arşiv',
   filterCode: 'Kod',
